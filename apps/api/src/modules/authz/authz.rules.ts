@@ -1,5 +1,5 @@
 import type { Role } from "@semwise/shared";
-import type { Actor, Resource } from "./authz.types.js";
+import type { Actor, ActorClass, Resource } from "./authz.types.js";
 
 /**
  * The permission matrix from docs/permissions.md, as code. Deny by default: an action with no
@@ -71,9 +71,41 @@ const paOfProgram: Rule = (a, r) =>
   Boolean(r.programId) &&
   a.memberships.some((m) => m.role === "PROGRAM_ADMIN" && m.programId === r.programId);
 
+const PATH_KEYS = [
+  "programId",
+  "batchId",
+  "semesterId",
+  "sectionId",
+  "subjectId",
+  "classId",
+] as const;
+
+/**
+ * True when the resource sits on the path of the class: every scope field the resource names
+ * matches the class, and it names at least one. A semester matches the classes taught in it;
+ * a subject matches its classes; a section matches classes of that section.
+ */
+function onClassPath(c: ActorClass, r: Resource): boolean {
+  let named = 0;
+  for (const key of PATH_KEYS) {
+    const value = r[key];
+    if (!value) continue;
+    named += 1;
+    if (c[key] !== value) return false;
+  }
+  return named > 0;
+}
+
 /** Teacher: only on classes they are the subject teacher of. */
 const teacherOfClass: Rule = (a, r) =>
-  inTenant(a, r) && hasRole(a, "TEACHER") && (r.teacherUserIds ?? []).includes(a.userId);
+  inTenant(a, r) &&
+  hasRole(a, "TEACHER") &&
+  Boolean(r.classId) &&
+  a.teaching.some((c) => c.classId === r.classId);
+
+/** Teacher: anything on the path of a class they teach (its program, batch, semester, subject). */
+const teacherOnPath: Rule = (a, r) =>
+  inTenant(a, r) && hasRole(a, "TEACHER") && a.teaching.some((c) => onClassPath(c, r));
 
 /** CR: only for the section they represent. */
 const crOfSection: Rule = (a, r) =>
@@ -90,12 +122,14 @@ const studentOfSection: Rule = (a, r) =>
   Boolean(r.sectionId) &&
   a.enrollments.some((e) => e.sectionId === r.sectionId);
 
-/** Student: a batch they are enrolled in. */
+/** Student: their own batch, or the program above it (any semester or section of the batch). */
 const studentOfBatch: Rule = (a, r) =>
   inTenant(a, r) &&
   isStudent(a) &&
-  Boolean(r.batchId) &&
-  a.enrollments.some((e) => e.batchId === r.batchId);
+  Boolean(r.batchId || r.programId) &&
+  a.enrollments.some(
+    (e) => (!r.batchId || e.batchId === r.batchId) && (!r.programId || e.programId === r.programId),
+  );
 
 const owns: Rule = (a, r) => inTenant(a, r) && Boolean(r.ownerId) && r.ownerId === a.userId;
 
@@ -125,7 +159,7 @@ export const rules: Record<Action, Rule> = {
   [Action.PROGRAM_CREATE]: ua,
   [Action.PROGRAM_ADMIN_ASSIGN]: ua,
   [Action.STRUCTURE_MANAGE]: any(ua, paOfProgram),
-  [Action.STRUCTURE_READ]: any(ua, paOfProgram, teacherOfClass, crOfSection, studentOfBatch),
+  [Action.STRUCTURE_READ]: any(ua, paOfProgram, teacherOnPath, crOfSection, studentOfBatch),
   [Action.STUDENTS_MANAGE]: any(ua, paOfProgram),
   [Action.ENROLLMENT_MANAGE]: any(ua, paOfProgram),
   [Action.CR_MANAGE]: any(ua, paOfProgram),
@@ -135,7 +169,7 @@ export const rules: Record<Action, Rule> = {
   [Action.SYLLABUS_READ_PUBLISHED]: any(
     ua,
     paOfProgram,
-    teacherOfClass,
+    teacherOnPath,
     crOfSection,
     studentOfBatch,
   ),

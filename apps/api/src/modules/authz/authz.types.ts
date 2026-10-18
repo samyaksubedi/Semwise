@@ -10,6 +10,16 @@ export interface ActorEnrollment {
   current: boolean;
 }
 
+/** One class the actor teaches, with its full path. */
+export interface ActorClass {
+  programId: string;
+  batchId: string;
+  semesterId: string;
+  sectionId: string;
+  subjectId: string;
+  classId: string;
+}
+
 /**
  * Who is acting, inside one college. Loaded on the server for every request from the session and
  * the database; nothing here comes from the client.
@@ -22,6 +32,8 @@ export interface Actor {
   /** Active memberships in this college only; rights never carry across colleges. */
   memberships: RoleGrant[];
   enrollments: ActorEnrollment[];
+  /** Classes the actor is the subject teacher of. */
+  teaching: ActorClass[];
 }
 
 /**
@@ -34,9 +46,8 @@ export interface Resource {
   batchId?: string | null;
   semesterId?: string | null;
   sectionId?: string | null;
+  subjectId?: string | null;
   classId?: string | null;
-  /** Subject teachers of the class (or of the classes) the resource belongs to. */
-  teacherUserIds?: string[];
   /** Author or owner (entry author, private data owner). */
   ownerId?: string | null;
   /** Approval setting locked by the Program Admin. */

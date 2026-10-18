@@ -5,6 +5,15 @@ import { auditPlatformRouter, auditRouter } from "./modules/audit/index.js";
 import { authRouter, loadSession, requireAuth } from "./modules/auth/index.js";
 import { requireSuperAdmin, resolveTenant } from "./modules/authz/index.js";
 import { healthRouter } from "./modules/health/index.js";
+import { invitationsPublicRouter } from "./modules/invitations/index.js";
+import {
+  batchesRouter,
+  programsRouter,
+  sectionsRouter,
+  semestersRouter,
+  subjectsRouter,
+} from "./modules/structure/index.js";
+import { collegeRouter, tenantsPlatformRouter } from "./modules/tenants/index.js";
 
 /** Tenant routes: the active college always comes from the session, never from the client. */
 const tenantGuard: RequestHandler[] = [
@@ -35,12 +44,24 @@ export function createV1Router(): Router {
   const router = Router();
 
   router.use("/health", healthRouter);
+  router.use("/auth/invitations", invitationsPublicRouter);
   router.use("/auth", authRouter);
 
-  const platformRoutes: [string, Router][] = [["/audit", auditPlatformRouter]];
+  const platformRoutes: [string, Router][] = [
+    ["/tenants", tenantsPlatformRouter],
+    ["/audit", auditPlatformRouter],
+  ];
   for (const [path, sub] of platformRoutes) router.use(`/platform${path}`, ...platformGuard, sub);
 
-  const tenantRoutes: [string, Router][] = [["/audit", auditRouter]];
+  const tenantRoutes: [string, Router][] = [
+    ["/college", collegeRouter],
+    ["/programs", programsRouter],
+    ["/batches", batchesRouter],
+    ["/semesters", semestersRouter],
+    ["/sections", sectionsRouter],
+    ["/subjects", subjectsRouter],
+    ["/audit", auditRouter],
+  ];
   for (const [path, sub] of tenantRoutes) router.use(path, ...tenantGuard, sub);
 
   return router;

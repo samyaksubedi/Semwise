@@ -1,1 +1,5 @@
-export { membershipsService, type MembershipRecord } from "./memberships.service.js";
+export {
+  membershipsService,
+  type GrantScope,
+  type MembershipRecord,
+} from "./memberships.service.js";

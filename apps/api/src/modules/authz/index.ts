@@ -6,6 +6,7 @@ export {
   can,
   hasRole,
   registerEnrollmentLoader,
+  registerTeachingLoader,
 } from "./authz.service.js";
 export { getActor, getTenant, requireSuperAdmin, resolveTenant } from "./authz.middleware.js";
-export type { Actor, ActorEnrollment, Resource } from "./authz.types.js";
+export type { Actor, ActorClass, ActorEnrollment, Resource } from "./authz.types.js";

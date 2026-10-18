@@ -3,4 +3,7 @@ export * from "./api/errors.js";
 export * from "./schemas/audit.js";
 export * from "./schemas/auth.js";
 export * from "./schemas/common.js";
+export * from "./schemas/invitations.js";
 export * from "./schemas/roles.js";
+export * from "./schemas/structure.js";
+export * from "./schemas/tenants.js";

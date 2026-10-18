@@ -4,6 +4,13 @@ Who may do what, and where. This is the reference for the `authz` module and its
 
 Legend: **Y** allowed everywhere in the role's scope; **own** only on the user's own records or classes; **prog** only inside the user's own program; **sec** only for the user's own section; **agg** aggregated figures only; **-** not allowed.
 
+How the scoped cells are checked (as built in `modules/authz`):
+
+- **own classes** (Teacher): for class-level records (entries, approvals), the teacher is assigned to that class. For structure and syllabus reads, the record sits on the path of a class they teach: its program, batch, semester, section or subject.
+- **own batch** (Student): a batch they are enrolled in, or the program above it; that covers every semester and section of the batch.
+- **sec** (CR, Student): the section they represent (CR) or are or were enrolled in (Student).
+- A record in another college answers 404. A record the person may read but not change answers 403; one they may not read at all answers 404, so its existence does not leak.
+
 Roles: **SA** Super Admin, **UA** University Admin, **PA** Program Admin, **T** Teacher, **CR** Class Representative (also a student), **S** Student.
 
 ## General rules

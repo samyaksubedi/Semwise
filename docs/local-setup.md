@@ -77,6 +77,8 @@ Check: http://localhost:4000/v1/health/ready should report `database`, `redis` a
 - Log in: `POST http://localhost:4000/v1/auth/login` with `{ "email", "password" }` and the header `Origin: http://localhost:3000` (every write must come from an allowed origin). The response sets the session cookie.
 - `GET /v1/auth/me` shows the user, their colleges and their roles in the active college.
 - Forgot password: `POST /v1/auth/password/forgot`; the worker sends the email and Mailpit shows it at http://localhost:8025. The token is in the link's `#token=` fragment.
+- Provision a college as the Super Admin: `POST /v1/platform/tenants` with `{ "name", "timezone": "Asia/Kathmandu", "adminEmail" }`. The University Admin's invite appears in Mailpit; accept it with `POST /v1/auth/invitations/accept` and `{ "token", "password" }` (this signs them in).
+- As the University Admin: `POST /v1/programs`, then `POST /v1/programs/:id/admins` to invite a Program Admin. As the Program Admin: `POST /v1/programs/:id/batches`, `POST /v1/batches/:id/semesters`, `POST /v1/semesters/:id/sections` and `/subjects`. `GET /v1/batches/:id/tree` shows the result.
 
 ## 9. Checks before every commit
 

@@ -21,7 +21,15 @@ function actor(
 ): [string, Actor] {
   return [
     name,
-    { userId: name, tenantId, isSuperAdmin: false, memberships, enrollments: [], ...extra },
+    {
+      userId: name,
+      tenantId,
+      isSuperAdmin: false,
+      memberships,
+      enrollments: [],
+      teaching: [],
+      ...extra,
+    },
   ];
 }
 
@@ -35,13 +43,32 @@ const enrolled = (sectionId: string, batchId: string) => ({
   enrollments: [{ programId: "P1", batchId, semesterId: "SEM1", sectionId, current: true }],
 });
 
+const teaches = (sectionId: string, subjectId: string, classId: string) => ({
+  programId: "P1",
+  batchId: "B1",
+  semesterId: "SEM1",
+  sectionId,
+  subjectId,
+  classId,
+});
+
 const actors = new Map<string, Actor>([
-  ["SA", { userId: "SA", tenantId: null, isSuperAdmin: true, memberships: [], enrollments: [] }],
+  [
+    "SA",
+    {
+      userId: "SA",
+      tenantId: null,
+      isSuperAdmin: true,
+      memberships: [],
+      enrollments: [],
+      teaching: [],
+    },
+  ],
   actor("UA", [g("UNIVERSITY_ADMIN")]),
   actor("PA", [g("PROGRAM_ADMIN", "P1")]),
   actor("PA_other_program", [g("PROGRAM_ADMIN", "P2")]),
-  actor("T1", [g("TEACHER")]),
-  actor("T_other_class", [g("TEACHER")]),
+  actor("T1", [g("TEACHER")], { teaching: [teaches("S1", "SUB1", "C1")] }),
+  actor("T_other_class", [g("TEACHER")], { teaching: [teaches("S2", "SUB2", "C2")] }),
   actor("CR", [g("STUDENT"), g("CR", null, "S1")], enrolled("S1", "B1")),
   actor("CR_other_section", [g("STUDENT"), g("CR", null, "S2")], enrolled("S2", "B1")),
   actor("S", [g("STUDENT")], enrolled("S1", "B1")),
@@ -68,8 +95,17 @@ const base: Resource = {
   batchId: "B1",
   semesterId: "SEM1",
   sectionId: "S1",
+  subjectId: "SUB1",
   classId: "C1",
-  teacherUserIds: ["T1"],
+};
+
+/** Only the program named: the level above every batch, semester and section. */
+const programOnly: Partial<Resource> = {
+  batchId: null,
+  semesterId: null,
+  sectionId: null,
+  subjectId: null,
+  classId: null,
 };
 
 type Row = { action: Action; allowed: string[]; resource?: Partial<Resource> };
@@ -91,6 +127,21 @@ const matrix: Row[] = [
   {
     action: Action.STRUCTURE_READ,
     allowed: ["UA", "PA", "T1", "CR", "S", "CR_other_section", "S_other_section"],
+  },
+  {
+    action: Action.STRUCTURE_READ,
+    resource: programOnly,
+    allowed: [
+      "UA",
+      "PA",
+      "T1",
+      "T_other_class",
+      "CR",
+      "CR_other_section",
+      "S",
+      "S_other_section",
+      "S_other_batch",
+    ],
   },
   { action: Action.STUDENTS_MANAGE, allowed: ["UA", "PA"] },
   { action: Action.ENROLLMENT_MANAGE, allowed: ["UA", "PA"] },

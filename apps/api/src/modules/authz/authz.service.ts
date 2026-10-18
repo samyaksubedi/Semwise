@@ -1,7 +1,7 @@
 import { AppError } from "../../common/errors/app-error.js";
 import { membershipsService } from "../memberships/index.js";
 import { rules, type Action } from "./authz.rules.js";
-import type { Actor, ActorEnrollment, Resource } from "./authz.types.js";
+import type { Actor, ActorClass, ActorEnrollment, Resource } from "./authz.types.js";
 
 /**
  * Extra facts about the actor that later features contribute (enrollments, for example), kept
@@ -12,6 +12,13 @@ let enrollmentLoader: EnrollmentLoader = async () => [];
 
 export function registerEnrollmentLoader(loader: EnrollmentLoader): void {
   enrollmentLoader = loader;
+}
+
+type TeachingLoader = (tenantId: string, userId: string) => Promise<ActorClass[]>;
+let teachingLoader: TeachingLoader = async () => [];
+
+export function registerTeachingLoader(loader: TeachingLoader): void {
+  teachingLoader = loader;
 }
 
 /** True when the actor may perform the action on the resource. Deny by default. */
@@ -45,11 +52,19 @@ export const authzService = {
       membershipsService.grantsInTenant({ tenantId }, userId),
       enrollmentLoader(tenantId, userId),
     ]);
-    return { userId, tenantId, isSuperAdmin: false, memberships, enrollments };
+    const teaching = await teachingLoader(tenantId, userId);
+    return { userId, tenantId, isSuperAdmin: false, memberships, enrollments, teaching };
   },
 
   /** The Super Admin outside any college. */
   platformActor(userId: string): Actor {
-    return { userId, tenantId: null, isSuperAdmin: true, memberships: [], enrollments: [] };
+    return {
+      userId,
+      tenantId: null,
+      isSuperAdmin: true,
+      memberships: [],
+      enrollments: [],
+      teaching: [],
+    };
   },
 };

@@ -113,10 +113,26 @@ export const authService = {
     // One college: it becomes the active one straight away. Several: the user picks.
     const activeTenantId = tenantIds.length === 1 ? tenantIds[0]! : null;
 
+    const { token, cookieExpiresAt } = await this.startSession(
+      user.id,
+      activeTenantId,
+      client,
+      now,
+    );
+    return { view: await buildView(user, activeTenantId, isSuperAdmin), token, cookieExpiresAt };
+  },
+
+  /** Creates a session row and returns the cookie token (sent once, never stored). */
+  async startSession(
+    userId: string,
+    activeTenantId: string | null,
+    client: ClientInfo,
+    now = new Date(),
+  ): Promise<{ token: string; cookieExpiresAt: Date }> {
     const token = createSessionToken();
     const absoluteExpiresAt = new Date(now.getTime() + SESSION_ABSOLUTE_MS);
     await authRepository.createSession({
-      userId: user.id,
+      userId,
       tokenHash: hashSessionToken(token),
       activeTenantId,
       expiresAt: nextIdleExpiry(now, absoluteExpiresAt),
@@ -124,12 +140,7 @@ export const authService = {
       ip: client.ip,
       userAgent: client.userAgent?.slice(0, 512) ?? null,
     });
-
-    return {
-      view: await buildView(user, activeTenantId, isSuperAdmin),
-      token,
-      cookieExpiresAt: absoluteExpiresAt,
-    };
+    return { token, cookieExpiresAt: absoluteExpiresAt };
   },
 
   /** Turns a cookie token into an auth context, or null if unknown, revoked, expired or inactive. */

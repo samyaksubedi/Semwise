@@ -120,7 +120,7 @@ Rules (the blog's, plus the multi-tenant ones):
 | `authz`                                                        | The permission matrix and `can(...)` checks                                                                          | 1          |
 | `audit`                                                        | Audit log of admin actions, approvals, takedowns, syllabus and scope changes                                         | 1          |
 | `usage`                                                        | AI usage ledger, quotas, budgets, plan limits                                                                        | 1, 15      |
-| `programs` / `batches` / `semesters` / `subjects` / `sections` | Academic structure                                                                                                   | 2          |
+| `structure` (programs, batches, semesters, sections, subjects) | Academic structure, in one module because the five share path loading and authorization; Program Admin invites       | 2          |
 | `invitations`                                                  | Student, teacher and admin email invites                                                                             | 3          |
 | `enrollments`                                                  | Semester-specific section assignment with history                                                                    | 3          |
 | `classes`                                                      | Subject x section x teacher                                                                                          | 4          |
@@ -334,7 +334,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 
 - [x] 0. Scaffold: monorepo, shared package, lint, tests, CI, local Postgres and Qdrant
 - [x] 1. Foundations: auth, tenants, users, memberships, authz, audit, isolation tests, usage ledger
-- [ ] 2. Academic structure and tenant provisioning
+- [x] 2. Academic structure and tenant provisioning
 - [ ] 3. Invitations and enrollment
 - [ ] 4. Classes
 - [ ] 5. Syllabus ingestion

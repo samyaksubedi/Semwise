@@ -40,6 +40,12 @@ model Tenant {
   emailLogs   EmailLog[]
   plan        TenantPlan?
   quotas      Quota[]
+  programs    Program[]
+  batches     Batch[]
+  semesters   Semester[]
+  sections    Section[]
+  subjects    Subject[]
+  invitations Invitation[]
 
   @@map("tenants")
 }
@@ -69,6 +75,7 @@ model User {
   passwordResets   PasswordReset[]
   auditLogs        AuditLog[]
   aiUsage          AiUsage[]
+  invitationsSent  Invitation[]    @relation("InvitationInvitedBy")
 
   @@map("users")
 }
@@ -118,6 +125,12 @@ model Membership {
   tenantId    String?
   tenant      Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   role        Role
+  /// PROGRAM_ADMIN: the program administered.
+  programId   String?
+  program     Program?         @relation(fields: [programId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  /// CR: the section represented.
+  sectionId   String?
+  section     Section?         @relation(fields: [sectionId, tenantId], references: [id, tenantId], onDelete: Cascade)
   status      MembershipStatus @default(ACTIVE)
   grantedById String?
   grantedBy   User?            @relation("MembershipGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
@@ -293,4 +306,174 @@ model EmailLog {
   @@index([tenantId, createdAt])
   @@index([status, createdAt])
   @@map("email_logs")
+}
+
+// ---------- Academic structure ----------
+// Children repeat programId (and batchId, semesterId) so authorization and row-level security
+// never need a join.
+
+enum StructureStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model Program {
+  id          String          @id @default(cuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  code        String
+  status      StructureStatus @default(ACTIVE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  batches     Batch[]
+  semesters   Semester[]
+  sections    Section[]
+  subjects    Subject[]
+  memberships Membership[]
+  invitations Invitation[]
+
+  @@unique([tenantId, code])
+  @@unique([id, tenantId])
+  @@index([tenantId])
+  @@map("programs")
+}
+
+/// An intake of a program, e.g. "BIT 2026".
+model Batch {
+  id          String          @id @default(cuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programId   String
+  program     Program         @relation(fields: [programId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  name        String
+  intakeYear  Int
+  status      StructureStatus @default(ACTIVE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  semesters   Semester[]
+  sections    Section[]
+  subjects    Subject[]
+  invitations Invitation[]
+
+  @@unique([programId, name])
+  @@unique([id, programId, tenantId])
+  @@index([tenantId, programId])
+  @@map("batches")
+}
+
+enum SemesterStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+}
+
+/// Belongs to one batch (no shared semester definitions). At most one ACTIVE semester per batch.
+model Semester {
+  id          String         @id @default(cuid())
+  tenantId    String
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programId   String
+  program     Program        @relation(fields: [programId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  batchId     String
+  batch       Batch          @relation(fields: [batchId, programId, tenantId], references: [id, programId, tenantId], onDelete: Cascade)
+  number      Int
+  startDate   DateTime?      @db.Date
+  endDate     DateTime?      @db.Date
+  status      SemesterStatus @default(UPCOMING)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  sections    Section[]
+  subjects    Subject[]
+  invitations Invitation[]
+
+  @@unique([batchId, number])
+  @@unique([id, batchId, programId, tenantId])
+  @@index([tenantId, batchId])
+  @@map("semesters")
+}
+
+/// A group of students in one semester. Names can repeat across semesters.
+model Section {
+  id          String       @id @default(cuid())
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programId   String
+  program     Program      @relation(fields: [programId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  batchId     String
+  batch       Batch        @relation(fields: [batchId, programId, tenantId], references: [id, programId, tenantId], onDelete: Cascade)
+  semesterId  String
+  semester    Semester     @relation(fields: [semesterId, batchId, programId, tenantId], references: [id, batchId, programId, tenantId], onDelete: Cascade)
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  memberships Membership[]
+  invitations Invitation[]
+
+  @@unique([semesterId, name])
+  @@unique([id, tenantId])
+  @@index([tenantId, semesterId])
+  @@map("sections")
+}
+
+/// A curriculum subject of one batch's semester; each has its own syllabus.
+model Subject {
+  id         String          @id @default(cuid())
+  tenantId   String
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programId  String
+  program    Program         @relation(fields: [programId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  batchId    String
+  batch      Batch           @relation(fields: [batchId, programId, tenantId], references: [id, programId, tenantId], onDelete: Cascade)
+  semesterId String
+  semester   Semester        @relation(fields: [semesterId, batchId, programId, tenantId], references: [id, batchId, programId, tenantId], onDelete: Cascade)
+  name       String
+  code       String
+  credits    Int?
+  status     StructureStatus @default(ACTIVE)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@unique([semesterId, code])
+  @@index([tenantId, semesterId])
+  @@map("subjects")
+}
+
+// ---------- Invitations ----------
+
+/// An email invite to join a college in a role. Single-use, expiring, bound to the email; only a
+/// hash of the token is stored. Resending issues a new token.
+model Invitation {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email       String
+  displayName String?
+  /// Students: roll number or student ID, the second identifier.
+  rollNo      String?
+  role        Role
+  programId   String?
+  program     Program?  @relation(fields: [programId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  batchId     String?
+  batch       Batch?    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  semesterId  String?
+  semester    Semester? @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  sectionId   String?
+  section     Section?  @relation(fields: [sectionId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  revokedAt   DateTime?
+  invitedById String?
+  invitedBy   User?     @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  /// The latest email sent for this invite (its status lives in the email log).
+  emailLogId  String?
+  sendCount   Int       @default(0)
+  lastSentAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([tenantId, email])
+  @@index([tenantId, role, createdAt])
+  @@map("invitations")
 }
