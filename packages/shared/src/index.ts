@@ -7,3 +7,4 @@ export * from "./schemas/invitations.js";
 export * from "./schemas/roles.js";
 export * from "./schemas/structure.js";
 export * from "./schemas/tenants.js";
+export * from "./schemas/students.js";

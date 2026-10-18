@@ -4,11 +4,15 @@ import {
   type AcceptInvitationInput,
   type AcceptInvitationResult,
   type InvitationPreview,
+  type InviteSendStatus,
+  type InviteTeacherInput,
   type Role,
+  type TeacherView,
 } from "@semwise/shared";
 import { transaction, type TenantScope } from "../../common/db/scope.js";
 import { AppError } from "../../common/errors/app-error.js";
 import { auditService } from "../audit/index.js";
+import { Action, authorize, can, adminProgramIds, hasRole, type Actor } from "../authz/index.js";
 import {
   authService,
   createToken,
@@ -57,6 +61,12 @@ const acceptHandlers = new Map<Role, AcceptHandler>([
       await membershipsService.ensureRole(scope, user.id, "PROGRAM_ADMIN", inv.invitedById, {
         programId: inv.programId,
       });
+    },
+  ],
+  [
+    "TEACHER",
+    async (scope, inv, user) => {
+      await membershipsService.ensureRole(scope, user.id, "TEACHER", inv.invitedById);
     },
   ],
 ]);
@@ -198,6 +208,127 @@ export const invitationsService = {
       ? await authService.startSession(user.id, scope.tenantId, client, now)
       : null;
     return { result: { loggedIn: Boolean(session), tenantId: scope.tenantId }, session };
+  },
+
+  findManyByIds(scope: TenantScope, ids: string[]) {
+    return ids.length ? invitationsRepository.findManyByIds(scope, ids) : Promise.resolve([]);
+  },
+
+  /** Withdraws an open invite: its link stops working. Returns false if it was not open. */
+  async revoke(scope: TenantScope, id: string, now = new Date()): Promise<boolean> {
+    return (await invitationsRepository.revoke(scope, id, now)).count === 1;
+  },
+
+  /** Corrects the address of an unaccepted invite; returns the new token to email. */
+  async changeEmail(scope: TenantScope, id: string, email: string, now = new Date()) {
+    const token = createToken();
+    await invitationsRepository.changeEmail(
+      scope,
+      id,
+      email,
+      hashToken(token),
+      new Date(now.getTime() + INVITE_TTL_MS),
+    );
+    return token;
+  },
+
+  /** Issues a new token for an open invite (resend). */
+  async refreshToken(scope: TenantScope, id: string, now = new Date()) {
+    const token = createToken();
+    await invitationsRepository.rotateToken(
+      scope,
+      id,
+      hashToken(token),
+      new Date(now.getTime() + INVITE_TTL_MS),
+    );
+    return token;
+  },
+
+  /** Send status, last send time and count of each invite, for lists and progress bars. */
+  async sendInfo(scope: TenantScope, invitationIds: string[]) {
+    const invitations = await this.findManyByIds(scope, invitationIds);
+    const logIds = invitations.flatMap((i) => (i.emailLogId ? [i.emailLogId] : []));
+    const statuses = await notificationsService.statuses(scope.tenantId, logIds);
+    return new Map(
+      invitations.map((inv) => {
+        const status: InviteSendStatus = inv.emailLogId
+          ? (statuses.get(inv.emailLogId) ?? "QUEUED")
+          : "NONE";
+        return [
+          inv.id,
+          {
+            status,
+            lastSentAt: inv.lastSentAt?.toISOString() ?? null,
+            sendCount: inv.sendCount,
+            accepted: Boolean(inv.usedAt),
+            open: isOpen(inv, new Date()),
+          },
+        ];
+      }),
+    );
+  },
+
+  // ---------- Teachers ----------
+
+  /** Invites a teacher to the college. Who may assign teachers to classes may invite them. */
+  async inviteTeacher(actor: Actor, input: InviteTeacherInput) {
+    const scope = { tenantId: actor.tenantId! };
+    authorize(actor, Action.CLASS_MANAGE, { ...scope, programId: input.programId });
+    const invite = await transaction(scope, async () => {
+      const inv = await this.createOrRefresh(
+        scope,
+        {
+          email: input.email,
+          displayName: input.displayName,
+          role: "TEACHER",
+          programId: input.programId,
+        },
+        actor.userId,
+      );
+      await auditService.record({
+        tenantId: scope.tenantId,
+        programId: input.programId,
+        actorId: actor.userId,
+        action: "teacher.invite",
+        entityType: "Invitation",
+        entityId: inv.id,
+        after: { role: "TEACHER" },
+      });
+      return inv;
+    });
+    await this.send(scope, invite.id, invite.token);
+    return { invitationId: invite.id };
+  },
+
+  /** The college's teachers (joined and invited), for assigning them to classes. */
+  async listTeachers(actor: Actor, now = new Date()): Promise<TeacherView[]> {
+    const scope = { tenantId: actor.tenantId! };
+    const manages =
+      hasRole(actor, "UNIVERSITY_ADMIN") ||
+      adminProgramIds(actor).some((programId) =>
+        can(actor, Action.CLASS_MANAGE, { ...scope, programId }),
+      );
+    if (!manages) throw AppError.forbidden();
+    const userIds = await membershipsService.holders(scope, "TEACHER");
+    const users = await usersService.findManyByIds(userIds);
+    const joined: TeacherView[] = users.map((u) => ({
+      userId: u.id,
+      email: u.email,
+      displayName: u.displayName,
+      status: "ACTIVE",
+    }));
+    const emails = new Set(joined.map((t) => t.email));
+    const pending = (await invitationsRepository.listOpen(scope, "TEACHER", now))
+      .filter((inv) => !emails.has(inv.email))
+      .map((inv): TeacherView => ({
+        userId: null,
+        email: inv.email,
+        displayName: inv.displayName,
+        status: "INVITED",
+      }));
+    return [...joined, ...pending].sort((a, b) =>
+      (a.displayName ?? a.email).localeCompare(b.displayName ?? b.email),
+    );
   },
 
   async countOpenAdminInvites(tenantIds: string[], now = new Date()) {

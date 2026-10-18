@@ -1,4 +1,4 @@
-export { invitationsPublicRouter } from "./invitations.routes.js";
+export { invitationsPublicRouter, teachersRouter } from "./invitations.routes.js";
 export {
   INVITE_TTL_MS,
   invitationsService,

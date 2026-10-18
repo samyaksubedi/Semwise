@@ -126,6 +126,13 @@ export const notificationsService = {
     }
   },
 
+  /** Send status of several emails at once (invite lists and progress). */
+  async statuses(tenantId: string | null, ids: string[]) {
+    if (ids.length === 0) return new Map<string, "QUEUED" | "SENT" | "FAILED">();
+    const logs = await notificationsRepository.findMany(tenantId, ids);
+    return new Map(logs.map((l) => [l.id, l.status]));
+  },
+
   async status(tenantId: string | null, emailLogId: string) {
     const log = await notificationsRepository.find(tenantId, emailLogId);
     return log ? { status: log.status, attempts: log.attempts, sentAt: log.sentAt } : null;

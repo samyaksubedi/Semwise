@@ -59,6 +59,8 @@ The end-to-end flow of every feature, from the user's side and from the system's
 5. For the next semester the admin creates new sections and moves students; the old assignments stay as history.
 6. Admin can resend, revoke, fix a wrong email or deactivate a student.
 
+As built: a CSV needs the columns email, roll number and section (name optional); the preview lists errors per row (bad address, unknown section, duplicates in the file, a roll number or email already used) and writes nothing; the import adds the valid rows only. A resend waits 10 minutes after the last send and issues a new link. An email can be corrected only before the student joins. Granting a second CR to a section is refused unless the admin chooses to replace the current one; a CR moved to another section stops being CR. Deactivating removes the student's roles and current placement in this college only; past semesters and their own account stay.
+
 ## 4. Classes
 
 1. Program Admin picks batch, semester, subject and section, and assigns the subject teacher.

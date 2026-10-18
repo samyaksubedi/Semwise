@@ -15,6 +15,12 @@ export const notificationsRepository = {
     return inScope(tenantId, (db) => db.emailLog.findFirst({ where: { id, tenantId } }));
   },
 
+  findMany(tenantId: string | null, ids: string[]) {
+    return inScope(tenantId, (db) =>
+      db.emailLog.findMany({ where: { id: { in: ids }, tenantId } }),
+    );
+  },
+
   update(
     tenantId: string | null,
     id: string,

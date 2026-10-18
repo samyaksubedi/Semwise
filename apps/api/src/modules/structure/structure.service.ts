@@ -595,6 +595,7 @@ export const structureService = {
 
   findSemester: (scope: TenantScope, id: string) => repo.findSemester(scope, id),
   findSection: (scope: TenantScope, id: string) => repo.findSection(scope, id),
+  listSectionsRaw: (scope: TenantScope, semesterId: string) => repo.listSections(scope, semesterId),
   findSections: (scope: TenantScope, ids: string[]) => repo.findSections(scope, ids),
   findSubject: (scope: TenantScope, id: string) => repo.findSubject(scope, id),
   findSubjects: (scope: TenantScope, ids: string[]) => repo.findSubjects(scope, ids),

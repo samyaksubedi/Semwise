@@ -25,15 +25,15 @@ enum TenantStatus {
 
 /// One college. Created by the Super Admin.
 model Tenant {
-  id          String       @id @default(cuid())
+  id          String          @id @default(cuid())
   name        String
-  slug        String       @unique
+  slug        String          @unique
   /// IANA timezone, e.g. Asia/Kathmandu. "Today" and date ranges are computed in it.
   timezone    String
-  status      TenantStatus @default(ACTIVE)
-  settings    Json         @default("{}")
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  status      TenantStatus    @default(ACTIVE)
+  settings    Json            @default("{}")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   memberships Membership[]
   auditLogs   AuditLog[]
   aiUsage     AiUsage[]
@@ -46,6 +46,8 @@ model Tenant {
   sections    Section[]
   subjects    Subject[]
   invitations Invitation[]
+  students    StudentRecord[]
+  enrollments Enrollment[]
 
   @@map("tenants")
 }
@@ -76,6 +78,7 @@ model User {
   auditLogs        AuditLog[]
   aiUsage          AiUsage[]
   invitationsSent  Invitation[]    @relation("InvitationInvitedBy")
+  studentRecords   StudentRecord[]
 
   @@map("users")
 }
@@ -332,6 +335,8 @@ model Program {
   subjects    Subject[]
   memberships Membership[]
   invitations Invitation[]
+  students    StudentRecord[]
+  enrollments Enrollment[]
 
   @@unique([tenantId, code])
   @@unique([id, tenantId])
@@ -355,6 +360,8 @@ model Batch {
   sections    Section[]
   subjects    Subject[]
   invitations Invitation[]
+  students    StudentRecord[]
+  enrollments Enrollment[]
 
   @@unique([programId, name])
   @@unique([id, programId, tenantId])
@@ -386,6 +393,7 @@ model Semester {
   sections    Section[]
   subjects    Subject[]
   invitations Invitation[]
+  enrollments Enrollment[]
 
   @@unique([batchId, number])
   @@unique([id, batchId, programId, tenantId])
@@ -409,9 +417,11 @@ model Section {
   updatedAt   DateTime     @updatedAt
   memberships Membership[]
   invitations Invitation[]
+  enrollments Enrollment[]
 
   @@unique([semesterId, name])
   @@unique([id, tenantId])
+  @@unique([id, semesterId, batchId, programId, tenantId])
   @@index([tenantId, semesterId])
   @@map("sections")
 }
@@ -476,4 +486,81 @@ model Invitation {
   @@index([tenantId, email])
   @@index([tenantId, role, createdAt])
   @@map("invitations")
+}
+
+// ---------- Students and enrollment ----------
+
+enum StudentStatus {
+  /**
+   * Invited, has not joined yet.
+   */
+  INVITED
+  ACTIVE
+  /**
+   * Left the college or the invite was withdrawn; history is kept.
+   */
+  DEACTIVATED
+}
+
+/// A person's student identity in one college, created when they are invited (before they
+/// have an account), so admins can place and correct them before they join.
+model StudentRecord {
+  id           String        @id @default(cuid())
+  tenantId     String
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programId    String
+  program      Program       @relation(fields: [programId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  batchId      String
+  batch        Batch         @relation(fields: [batchId, programId, tenantId], references: [id, programId, tenantId], onDelete: Cascade)
+  /// Set when the invite is accepted.
+  userId       String?
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// The invited address (the account's email once joined).
+  email        String
+  displayName  String?
+  rollNo       String
+  status       StudentStatus @default(INVITED)
+  invitationId String?       @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  enrollments  Enrollment[]
+
+  @@unique([tenantId, rollNo])
+  @@unique([tenantId, email])
+  @@unique([tenantId, userId])
+  @@unique([id, batchId, tenantId])
+  @@index([tenantId, batchId, status])
+  @@map("student_records")
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  /**
+   * Taken out of the semester (left, or moved before the semester began).
+   */
+  REMOVED
+}
+
+/// A student's section in one semester. The set of rows is the student's section history.
+model Enrollment {
+  id              String           @id @default(cuid())
+  tenantId        String
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programId       String
+  program         Program          @relation(fields: [programId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  batchId         String
+  batch           Batch            @relation(fields: [batchId, programId, tenantId], references: [id, programId, tenantId], onDelete: Cascade)
+  semesterId      String
+  semester        Semester         @relation(fields: [semesterId, batchId, programId, tenantId], references: [id, batchId, programId, tenantId], onDelete: Cascade)
+  sectionId       String
+  section         Section          @relation(fields: [sectionId, semesterId, batchId, programId, tenantId], references: [id, semesterId, batchId, programId, tenantId], onDelete: Cascade)
+  studentRecordId String
+  student         StudentRecord    @relation(fields: [studentRecordId, batchId, tenantId], references: [id, batchId, tenantId], onDelete: Cascade)
+  status          EnrollmentStatus @default(ACTIVE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([studentRecordId, semesterId])
+  @@index([tenantId, semesterId, sectionId, status])
+  @@map("enrollments")
 }

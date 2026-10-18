@@ -124,6 +124,47 @@ export const invitationsRepository = {
     );
   },
 
+  findManyByIds(scope: TenantScope, ids: string[]) {
+    return withTenant(scope.tenantId, (db) =>
+      db.invitation.findMany({ where: { id: { in: ids }, tenantId: scope.tenantId } }),
+    );
+  },
+
+  /** Open invites of a role (pending teachers, for example). */
+  listOpen(scope: TenantScope, role: Role, now: Date) {
+    return withTenant(scope.tenantId, (db) =>
+      db.invitation.findMany({
+        where: {
+          tenantId: scope.tenantId,
+          role,
+          usedAt: null,
+          revokedAt: null,
+          expiresAt: { gt: now },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    );
+  },
+
+  revoke(scope: TenantScope, id: string, at: Date) {
+    return withTenant(scope.tenantId, (db) =>
+      db.invitation.updateMany({
+        where: { id, tenantId: scope.tenantId, usedAt: null, revokedAt: null },
+        data: { revokedAt: at },
+      }),
+    );
+  },
+
+  /** A corrected address gets a fresh token, so a link sent to the wrong address stops working. */
+  changeEmail(scope: TenantScope, id: string, email: string, tokenHash: string, expiresAt: Date) {
+    return withTenant(scope.tenantId, (db) =>
+      db.invitation.update({
+        where: { id, tenantId: scope.tenantId },
+        data: { email, tokenHash, expiresAt, revokedAt: null },
+      }),
+    );
+  },
+
   /** Open admin invites per college (Super Admin's list). */
   async countOpenByTenant(tenantIds: string[], role: Role, now: Date) {
     const rows = await withSystem((db) =>

@@ -6,11 +6,13 @@ import { logger } from "./lib/logger.js";
 import { prisma } from "./lib/prisma.js";
 import { QueueName, closeQueues, getQueue } from "./lib/queue.js";
 import { closeRedis, createRedisConnection } from "./lib/redis.js";
+import { wireModules } from "./wiring.js";
 
 /**
  * The worker process: same image as the API, started with `node dist/worker.js`.
  * It runs every BullMQ job, so slow AI work never blocks web requests.
  */
+wireModules();
 await loadJobHandlers();
 
 const workers = Object.values(QueueName).map((queue) => {

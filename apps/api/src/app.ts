@@ -11,9 +11,11 @@ import { getQdrant } from "./lib/qdrant.js";
 import { getRedis } from "./lib/redis.js";
 import { registerReadinessCheck } from "./modules/health/index.js";
 import { createV1Router } from "./routes.js";
+import { wireModules } from "./wiring.js";
 
 /** Builds the Express app without listening, so tests can drive it directly. */
 export function createApp(): Express {
+  wireModules();
   registerReadinessCheck("database", async () => {
     await prisma.$queryRaw`SELECT 1`;
   });

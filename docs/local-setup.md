@@ -79,6 +79,8 @@ Check: http://localhost:4000/v1/health/ready should report `database`, `redis` a
 - Forgot password: `POST /v1/auth/password/forgot`; the worker sends the email and Mailpit shows it at http://localhost:8025. The token is in the link's `#token=` fragment.
 - Provision a college as the Super Admin: `POST /v1/platform/tenants` with `{ "name", "timezone": "Asia/Kathmandu", "adminEmail" }`. The University Admin's invite appears in Mailpit; accept it with `POST /v1/auth/invitations/accept` and `{ "token", "password" }` (this signs them in).
 - As the University Admin: `POST /v1/programs`, then `POST /v1/programs/:id/admins` to invite a Program Admin. As the Program Admin: `POST /v1/programs/:id/batches`, `POST /v1/batches/:id/semesters`, `POST /v1/semesters/:id/sections` and `/subjects`. `GET /v1/batches/:id/tree` shows the result.
+- Students: `POST /v1/semesters/:id/students` (one) or `POST /v1/semesters/:id/students/import/preview` then `/import` with `{ "csv": "email,roll_no,name,section
+..." }`. Watch `GET /v1/semesters/:id/students/invite-progress` while the worker sends (20 a minute, 400 a day by default). CR: `POST /v1/sections/:id/cr` with `{ "studentId" }`. Teachers: `POST /v1/teachers/invite` with `{ "email", "programId" }`.
 
 ## 9. Checks before every commit
 

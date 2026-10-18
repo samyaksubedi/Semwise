@@ -5,7 +5,12 @@ import { auditPlatformRouter, auditRouter } from "./modules/audit/index.js";
 import { authRouter, loadSession, requireAuth } from "./modules/auth/index.js";
 import { requireSuperAdmin, resolveTenant } from "./modules/authz/index.js";
 import { healthRouter } from "./modules/health/index.js";
-import { invitationsPublicRouter } from "./modules/invitations/index.js";
+import {
+  sectionCrRouter,
+  semesterStudentsRouter,
+  studentsRouter,
+} from "./modules/enrollments/index.js";
+import { invitationsPublicRouter, teachersRouter } from "./modules/invitations/index.js";
 import {
   batchesRouter,
   programsRouter,
@@ -47,22 +52,35 @@ export function createV1Router(): Router {
   router.use("/auth/invitations", invitationsPublicRouter);
   router.use("/auth", authRouter);
 
-  const platformRoutes: [string, Router][] = [
-    ["/tenants", tenantsPlatformRouter],
-    ["/audit", auditPlatformRouter],
-  ];
-  for (const [path, sub] of platformRoutes) router.use(`/platform${path}`, ...platformGuard, sub);
+  // Several modules may share a prefix (structure and enrollments under /semesters); the guard
+  // runs once per request, before any of them.
+  const mount = (guard: RequestHandler[], routes: [string, Router][], prefix = "") => {
+    router.use([...new Set(routes.map(([path]) => prefix + path))], ...guard);
+    for (const [path, sub] of routes) router.use(prefix + path, sub);
+  };
 
-  const tenantRoutes: [string, Router][] = [
+  mount(
+    platformGuard,
+    [
+      ["/tenants", tenantsPlatformRouter],
+      ["/audit", auditPlatformRouter],
+    ],
+    "/platform",
+  );
+
+  mount(tenantGuard, [
     ["/college", collegeRouter],
     ["/programs", programsRouter],
     ["/batches", batchesRouter],
     ["/semesters", semestersRouter],
+    ["/semesters", semesterStudentsRouter],
     ["/sections", sectionsRouter],
+    ["/sections", sectionCrRouter],
     ["/subjects", subjectsRouter],
+    ["/students", studentsRouter],
+    ["/teachers", teachersRouter],
     ["/audit", auditRouter],
-  ];
-  for (const [path, sub] of tenantRoutes) router.use(path, ...tenantGuard, sub);
+  ]);
 
   return router;
 }

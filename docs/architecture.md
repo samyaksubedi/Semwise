@@ -335,7 +335,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 - [x] 0. Scaffold: monorepo, shared package, lint, tests, CI, local Postgres and Qdrant
 - [x] 1. Foundations: auth, tenants, users, memberships, authz, audit, isolation tests, usage ledger
 - [x] 2. Academic structure and tenant provisioning
-- [ ] 3. Invitations and enrollment
+- [x] 3. Invitations and enrollment
 - [ ] 4. Classes
 - [ ] 5. Syllabus ingestion
 - [ ] 6. Class entries and approvals
