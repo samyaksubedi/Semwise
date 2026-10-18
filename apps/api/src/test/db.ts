@@ -10,11 +10,15 @@ function ownerPool(): pg.Pool {
   return owner;
 }
 
-/** Empties every table (keeping the migration history) and the test Redis database. */
+/** Reference data seeded by migrations; kept between tests. */
+const KEEP = ["_prisma_migrations", "price_table"];
+
+/** Empties every table (keeping migrations and reference data) and the test Redis database. */
 export async function resetDatabase(): Promise<void> {
   const pool = ownerPool();
   const { rows } = await pool.query<{ tablename: string }>(
-    `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`,
+    `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND NOT (tablename = ANY($1))`,
+    [KEEP],
   );
   const tables = rows.map((row) => `"public"."${row.tablename}"`).join(", ");
   if (tables) await pool.query(`TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE`);

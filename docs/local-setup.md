@@ -50,7 +50,19 @@ pnpm db:deploy
 
 (`pnpm db:migrate` when you change `apps/api/prisma/schema.prisma`; it creates a new migration.)
 
-## 6. Run
+## 6. Create the Super Admin
+
+The platform operator account. The password comes from an environment variable so it stays out of shell history:
+
+```powershell
+$env:SUPER_ADMIN_PASSWORD = "a long local password"
+pnpm super-admin:create -- --email admin@semwise.local --name "Platform Admin"
+Remove-Item Env:SUPER_ADMIN_PASSWORD
+```
+
+Running it again for the same email resets that account's password and keeps it Super Admin.
+
+## 7. Run
 
 ```powershell
 pnpm dev
@@ -60,7 +72,13 @@ This builds the shared package, starts the API on http://localhost:4000, waits f
 
 Check: http://localhost:4000/v1/health/ready should report `database`, `redis` and `qdrant` as `ok`.
 
-## 7. Checks before every commit
+## 8. Try it
+
+- Log in: `POST http://localhost:4000/v1/auth/login` with `{ "email", "password" }` and the header `Origin: http://localhost:3000` (every write must come from an allowed origin). The response sets the session cookie.
+- `GET /v1/auth/me` shows the user, their colleges and their roles in the active college.
+- Forgot password: `POST /v1/auth/password/forgot`; the worker sends the email and Mailpit shows it at http://localhost:8025. The token is in the link's `#token=` fragment.
+
+## 9. Checks before every commit
 
 ```powershell
 pnpm lint

@@ -13,15 +13,15 @@ The planned PostgreSQL tables, in Prisma terms, before the real `schema.prisma` 
 
 ## Identity and access
 
-| Table           | Key fields                                                                                                      | Notes                                                                                   |
-| --------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `Tenant`        | name, slug, timezone, status, settings                                                                          | One college                                                                             |
-| `User`          | email (unique), passwordHash, displayName, status (INVITED, ACTIVE, DEACTIVATED), failedLoginCount, lockedUntil | One account for every person; globally unique email                                     |
-| `Session`       | userId, activeTenantId, tokenHash (unique), expiresAt, absoluteExpiresAt, revokedAt                             | Same pattern as the blog; the active college is stored here                             |
-| `Membership`    | userId, tenantId, role, programId?, sectionId?, status, grantedBy                                               | Role + scope; roles: SUPER_ADMIN, UNIVERSITY_ADMIN, PROGRAM_ADMIN, TEACHER, CR, STUDENT |
-| `StudentRecord` | userId, tenantId, rollNo (unique per tenant), status                                                            | A person's student identity in one college                                              |
-| `Invitation`    | tenantId, email, rollNo?, roleIntent, scope, tokenHash, expiresAt, usedAt, revokedAt, sendStatus, sentAt        | Single-use, expiring, bound to the email                                                |
-| `PasswordReset` | userId, tokenHash, expiresAt, usedAt                                                                            | Single-use                                                                              |
+| Table           | Key fields                                                                                                      | Notes                                                                                                                                |
+| --------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `Tenant`        | name, slug, timezone, status, settings                                                                          | One college                                                                                                                          |
+| `User`          | email (unique), passwordHash, displayName, status (INVITED, ACTIVE, DEACTIVATED), failedLoginCount, lockedUntil | One account for every person; globally unique email                                                                                  |
+| `Session`       | userId, activeTenantId, tokenHash (unique), expiresAt, absoluteExpiresAt, revokedAt                             | Same pattern as the blog; the active college is stored here                                                                          |
+| `Membership`    | userId, tenantId?, role, programId?, sectionId?, status, grantedBy                                              | Role + scope; roles: SUPER_ADMIN, UNIVERSITY_ADMIN, PROGRAM_ADMIN, TEACHER, CR, STUDENT. SUPER_ADMIN is the only role with no tenant |
+| `StudentRecord` | userId, tenantId, rollNo (unique per tenant), status                                                            | A person's student identity in one college                                                                                           |
+| `Invitation`    | tenantId, email, rollNo?, roleIntent, scope, tokenHash, expiresAt, usedAt, revokedAt, sendStatus, sentAt        | Single-use, expiring, bound to the email                                                                                             |
+| `PasswordReset` | userId, tokenHash, expiresAt, usedAt                                                                            | Single-use                                                                                                                           |
 
 ## Academic structure
 
@@ -96,16 +96,18 @@ Resolution of auto-approval: a class setting overrides the program default, unle
 
 ## Operations
 
-| Table        | Key fields                                                                                                     |
-| ------------ | -------------------------------------------------------------------------------------------------------------- |
-| `AiUsage`    | tenantId, userId, feature, model, inputTokens, outputTokens, cachedTokens, costMicros, priceVersion, requestId |
-| `PriceTable` | model, inputPer1M, outputPer1M, cachedPer1M, effectiveFrom                                                     |
-| `Quota`      | scope (USER, TENANT), feature, period (MONTH), limit                                                           |
-| `TenantPlan` | tenantId, plan, monthlyAiBudget, limits                                                                        |
-| `AuditLog`   | tenantId, actorId, action, entityType, entityId, before/after (json), ip, requestId                            |
-| `EmailLog`   | tenantId, template, toHash, status, messageId, attempts, sentAt (no email bodies or plain addresses)           |
+| Table        | Key fields                                                                                                                                                                                                                                                 |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AiUsage`    | tenantId, userId, feature, task (route, answer, embed ...), model, inputTokens, outputTokens, cachedTokens, audioSeconds, costMicros, priceId (the PriceTable row used), requestId (groups the calls of one user action; quotas count distinct requestIds) |
+| `PriceTable` | model, unit (TOKENS, MINUTES), inputPer1M, outputPer1M, cachedPer1M, perMinute (micro-dollars), effectiveFrom; seeded by the first migration                                                                                                               |
+| `Quota`      | tenantId? (null = platform default), scope (USER, TENANT), feature, limit; period is the calendar month (UTC); without a row the environment defaults apply                                                                                                |
+| `TenantPlan` | tenantId, plan, monthlyAiBudget, limits                                                                                                                                                                                                                    |
+| `AuditLog`   | tenantId? (null for platform actions), programId? (so a Program Admin can read their program's trail), actorId, action, entityType, entityId, before/after (json), ip, requestId                                                                           |
+| `EmailLog`   | tenantId? (null for password resets), template, toHash, status (QUEUED, SENT, FAILED), messageId, attempts, error, sentAt (no email bodies or plain addresses)                                                                                             |
 
 ## Tenant isolation
+
+As built (feature 1): every repository runs its queries through `withTenant(tenantId, ...)`, a transaction that first runs `set_config('app.tenant_id', ...)`, and also puts `tenantId` in every `where`. The policies use `semwise_rls_ok(tenantId)`. The API, worker and tests connect as `semwise_app` (no superuser, no BYPASSRLS); migrations run as the owner. A few cross-tenant lookups (login, the college switcher, Super Admin platform work, password-reset email) use `withSystem`, which sets `app.bypass_rls`. Users, sessions, password resets and prices are global tables without RLS. Every tenant-owned table has its own `tenantId` column (denormalised on child tables such as Batch and Semester), so RLS and scoping never need a join.
 
 1. Every repository function takes a scope object and puts `tenantId` in the query.
 2. Row-level security policies on all tenant tables compare `tenantId` with a per-request database setting. The application connects with a role that cannot bypass them. A Prisma client extension sets the value for each request's queries.

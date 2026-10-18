@@ -35,7 +35,11 @@ export function getQueue(name: QueueName): Queue {
     queue = new Queue(name, {
       connection: getRedis(),
       prefix: env.QUEUE_PREFIX,
-      defaultJobOptions: DEFAULT_JOB_OPTIONS,
+      // Email jobs carry the address, so they are removed as soon as they finish.
+      defaultJobOptions:
+        name === QueueName.email
+          ? { ...DEFAULT_JOB_OPTIONS, removeOnComplete: true }
+          : DEFAULT_JOB_OPTIONS,
     });
     queues.set(name, queue);
   }

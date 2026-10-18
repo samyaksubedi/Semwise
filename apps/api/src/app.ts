@@ -5,6 +5,7 @@ import { corsMiddleware } from "./common/middleware/cors.js";
 import { errorHandler } from "./common/middleware/error-handler.js";
 import { httpLogger } from "./common/middleware/http-logger.js";
 import { notFound } from "./common/middleware/not-found.js";
+import { requestContext } from "./common/http/request-context.js";
 import { prisma } from "./lib/prisma.js";
 import { getQdrant } from "./lib/qdrant.js";
 import { getRedis } from "./lib/redis.js";
@@ -29,6 +30,7 @@ export function createApp(): Express {
   app.set("trust proxy", env.TRUST_PROXY_HOPS);
 
   app.use(httpLogger);
+  app.use(requestContext);
   app.use(helmet());
   app.use(corsMiddleware);
   app.use(express.json({ limit: "1mb" }));

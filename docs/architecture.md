@@ -333,7 +333,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 ## Build progress
 
 - [x] 0. Scaffold: monorepo, shared package, lint, tests, CI, local Postgres and Qdrant
-- [ ] 1. Foundations: auth, tenants, users, memberships, authz, audit, isolation tests, usage ledger
+- [x] 1. Foundations: auth, tenants, users, memberships, authz, audit, isolation tests, usage ledger
 - [ ] 2. Academic structure and tenant provisioning
 - [ ] 3. Invitations and enrollment
 - [ ] 4. Classes

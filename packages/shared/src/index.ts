@@ -1,3 +1,6 @@
 export * from "./api/envelope.js";
 export * from "./api/errors.js";
+export * from "./schemas/audit.js";
+export * from "./schemas/auth.js";
 export * from "./schemas/common.js";
+export * from "./schemas/roles.js";

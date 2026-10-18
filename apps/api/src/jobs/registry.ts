@@ -1,7 +1,7 @@
 import type { Job } from "bullmq";
 import type { QueueName } from "../lib/queue.js";
 
-export type JobHandler = (data: never, job: Job) => Promise<unknown>;
+export type JobHandler = (data: never, job: Job, token?: string) => Promise<unknown>;
 
 /** Concurrency and rate limit per queue; OpenAI and email sending are throttled. */
 export interface QueueSettings {
@@ -22,7 +22,7 @@ export const handlers = new Map<QueueName, Map<string, JobHandler>>();
 export function registerHandler<T>(
   queue: QueueName,
   name: string,
-  handler: (data: T, job: Job) => Promise<unknown>,
+  handler: (data: T, job: Job, token?: string) => Promise<unknown>,
 ): void {
   let byName = handlers.get(queue);
   if (!byName) {

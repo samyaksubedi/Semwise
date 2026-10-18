@@ -1,5 +1,8 @@
 // Semwise database schema. Plan: docs/data-model.md.
 // After editing: `pnpm db:migrate` creates and applies a migration.
+//
+// Every tenant-owned table has `tenantId` and a row-level security policy (added in the migration
+// SQL, since Prisma does not model policies). Repositories still filter by tenantId explicitly.
 
 generator client {
   provider            = "prisma-client"
@@ -11,4 +14,283 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------- Identity and access ----------
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+/// One college. Created by the Super Admin.
+model Tenant {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  /// IANA timezone, e.g. Asia/Kathmandu. "Today" and date ranges are computed in it.
+  timezone    String
+  status      TenantStatus @default(ACTIVE)
+  settings    Json         @default("{}")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  memberships Membership[]
+  auditLogs   AuditLog[]
+  aiUsage     AiUsage[]
+  emailLogs   EmailLog[]
+  plan        TenantPlan?
+  quotas      Quota[]
+
+  @@map("tenants")
+}
+
+enum UserStatus {
+  INVITED
+  ACTIVE
+  DEACTIVATED
+}
+
+/// One account per person, across every college. Roles come from memberships.
+model User {
+  id               String          @id @default(cuid())
+  email            String          @unique
+  /// Null until an invited person sets a password.
+  passwordHash     String?
+  displayName      String
+  status           UserStatus      @default(INVITED)
+  failedLoginCount Int             @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  sessions         Session[]
+  memberships      Membership[]    @relation("MembershipUser")
+  granted          Membership[]    @relation("MembershipGrantedBy")
+  passwordResets   PasswordReset[]
+  auditLogs        AuditLog[]
+  aiUsage          AiUsage[]
+
+  @@map("users")
+}
+
+/// A login. Only a SHA-256 hash of the cookie token is stored. The active college lives here.
+model Session {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeTenantId    String?
+  tokenHash         String    @unique
+  createdAt         DateTime  @default(now())
+  lastUsedAt        DateTime  @default(now())
+  /// Idle expiry; pushed forward on use.
+  expiresAt         DateTime
+  /// Hard limit; never extended.
+  absoluteExpiresAt DateTime
+  revokedAt         DateTime?
+  ip                String?
+  userAgent         String?
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+enum Role {
+  SUPER_ADMIN
+  UNIVERSITY_ADMIN
+  PROGRAM_ADMIN
+  TEACHER
+  CR
+  STUDENT
+}
+
+enum MembershipStatus {
+  ACTIVE
+  REVOKED
+}
+
+/// A role with a scope. SUPER_ADMIN has no tenant; every other role belongs to one college,
+/// and PROGRAM_ADMIN / CR are further scoped to a program or section (added with those tables).
+model Membership {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation("MembershipUser", fields: [userId], references: [id], onDelete: Cascade)
+  tenantId    String?
+  tenant      Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  role        Role
+  status      MembershipStatus @default(ACTIVE)
+  grantedById String?
+  grantedBy   User?            @relation("MembershipGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime         @default(now())
+  revokedAt   DateTime?
+
+  @@index([userId, status])
+  @@index([tenantId, role, status])
+  @@map("memberships")
+}
+
+/// Single-use, expiring password reset. Only a hash of the token is stored.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_resets")
+}
+
+// ---------- Operations ----------
+
+/// Admin actions, approvals, takedowns, syllabus and scope changes. Platform actions have no tenant.
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String?
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// Set when the action belongs to one program, so a Program Admin can read their own trail.
+  programId  String?
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  ip         String?
+  requestId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([tenantId, programId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+enum AiFeature {
+  SYLLABUS_EXTRACT
+  SYLLABUS_CHANGE
+  SYLLABUS_INDEX
+  ENTRY_ORGANIZE
+  ENTRY_INDEX
+  DICTATION
+  PHOTO_READ
+  CHAT
+  CATCHUP
+}
+
+/// One AI call. Counts and cost only; prompt and answer text are never stored here.
+model AiUsage {
+  id           String      @id @default(cuid())
+  tenantId     String
+  tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// The person the call was made for (null for system work such as indexing).
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  feature      AiFeature
+  /// The step inside the feature: route, answer, embed, transcribe ...
+  task         String
+  model        String
+  inputTokens  Int         @default(0)
+  outputTokens Int         @default(0)
+  cachedTokens Int         @default(0)
+  /// For transcription, billed per minute.
+  audioSeconds Int         @default(0)
+  costMicros   Int
+  /// The PriceTable row used, so old costs can be explained after prices change.
+  priceId      String?
+  price        PriceTable? @relation(fields: [priceId], references: [id], onDelete: SetNull)
+  /// Groups the calls of one user action (a chat question = router + answer).
+  requestId    String
+  createdAt    DateTime    @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, userId, feature, createdAt])
+  @@map("ai_usage")
+}
+
+enum PriceUnit {
+  TOKENS
+  MINUTES
+}
+
+/// Prices per model, updated by hand from OpenAI's pricing page. Micro-dollars per 1M tokens
+/// (or per minute of audio). The newest row with effectiveFrom <= now applies.
+model PriceTable {
+  id            String    @id @default(cuid())
+  model         String
+  unit          PriceUnit @default(TOKENS)
+  inputPer1M    Int       @default(0)
+  outputPer1M   Int       @default(0)
+  cachedPer1M   Int       @default(0)
+  perMinute     Int       @default(0)
+  effectiveFrom DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  usage         AiUsage[]
+
+  @@index([model, effectiveFrom(sort: Desc)])
+  @@map("price_table")
+}
+
+enum QuotaScope {
+  USER
+  TENANT
+}
+
+/// A monthly limit on a feature. A row with no tenant is the platform default; a tenant row overrides it.
+/// Without any row, the defaults from the environment apply.
+model Quota {
+  id        String     @id @default(cuid())
+  tenantId  String?
+  tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scope     QuotaScope
+  feature   AiFeature
+  limit     Int
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([tenantId, scope, feature])
+  @@map("quotas")
+}
+
+/// The college's plan. The monthly AI budget caps spend for the whole tenant.
+model TenantPlan {
+  id                    String   @id @default(cuid())
+  tenantId              String   @unique
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan                  String   @default("pilot")
+  monthlyAiBudgetMicros Int
+  limits                Json     @default("{}")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("tenant_plans")
+}
+
+enum EmailStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+/// One outgoing email. No body and no plain address: only a hash of the recipient.
+model EmailLog {
+  id        String      @id @default(cuid())
+  tenantId  String?
+  tenant    Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  template  String
+  toHash    String
+  status    EmailStatus @default(QUEUED)
+  messageId String?
+  attempts  Int         @default(0)
+  error     String?
+  sentAt    DateTime?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([tenantId, createdAt])
+  @@index([status, createdAt])
+  @@map("email_logs")
 }

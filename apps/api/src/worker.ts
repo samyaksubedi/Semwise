@@ -1,4 +1,5 @@
 import { Worker } from "bullmq";
+import { runWithRequestId } from "./common/http/request-context.js";
 import { env } from "./config/env.js";
 import { handlers, loadJobHandlers, queueSettings, scheduledJobs } from "./jobs/index.js";
 import { logger } from "./lib/logger.js";
@@ -16,10 +17,11 @@ const workers = Object.values(QueueName).map((queue) => {
   const settings = queueSettings[queue];
   const worker = new Worker(
     queue,
-    async (job) => {
+    async (job, token) => {
       const handler = handlers.get(queue)?.get(job.name);
       if (!handler) throw new Error(`No handler for ${queue}/${job.name}`);
-      return handler(job.data as never, job);
+      // Audit and usage rows written by the job carry the job id as their request id.
+      return runWithRequestId(`job-${job.id}`, () => handler(job.data as never, job, token));
     },
     {
       connection: createRedisConnection(),
