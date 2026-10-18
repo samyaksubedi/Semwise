@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    # API tests run against real Postgres, Redis and Qdrant. OpenAI, R2 and email are mocked.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: semwise
+          POSTGRES_PASSWORD: semwise
+          POSTGRES_DB: semwise_test
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U semwise -d semwise_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      qdrant:
+        image: qdrant/qdrant:v1.16.0
+        ports:
+          - 6333:6333
+
+    env:
+      TEST_DATABASE_URL: postgresql://semwise_app:semwise_app@localhost:5434/semwise_test
+      TEST_MIGRATION_DATABASE_URL: postgresql://semwise:semwise@localhost:5434/semwise_test
+      TEST_REDIS_URL: redis://localhost:6380/1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      # The same app role as infra/postgres-init.sql: no superuser, no RLS bypass.
+      - name: Create the application database role
+        run: |
+          psql "postgresql://semwise:semwise@localhost:5434/semwise_test" <<'SQL'
+          CREATE ROLE semwise_app LOGIN PASSWORD 'semwise_app' NOSUPERUSER NOBYPASSRLS;
+          GRANT USAGE ON SCHEMA public TO semwise_app;
+          ALTER DEFAULT PRIVILEGES FOR ROLE semwise IN SCHEMA public
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO semwise_app;
+          ALTER DEFAULT PRIVILEGES FOR ROLE semwise IN SCHEMA public
+            GRANT USAGE, SELECT ON SEQUENCES TO semwise_app;
+          SQL
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm audit --prod --audit-level high

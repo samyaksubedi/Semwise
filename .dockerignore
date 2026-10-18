@@ -1,0 +1,13 @@
+# The API image is built from the repo root; send it only what it needs.
+**/node_modules
+**/dist
+**/.next
+**/coverage
+**/*.log
+**/.env
+**/.env.*
+.git
+.github
+apps/web
+docs
+infra

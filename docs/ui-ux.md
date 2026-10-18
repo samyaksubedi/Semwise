@@ -24,10 +24,10 @@ Defined once in `styles/tokens.css` as CSS variables (same approach as the blog)
 
 ## Layout and navigation
 
-| Screen width        | Navigation                                                                                  |
-| ------------------- | ------------------------------------------------------------------------------------------- |
-| Phone (under 768)   | Top bar (college name, profile) + **bottom tab bar** with at most 5 items, labels always shown |
-| Tablet and desktop  | Left **sidebar** with the same items, collapsible; content centred with a readable max width |
+| Screen width       | Navigation                                                                                     |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| Phone (under 768)  | Top bar (college name, profile) + **bottom tab bar** with at most 5 items, labels always shown |
+| Tablet and desktop | Left **sidebar** with the same items, collapsible; content centred with a readable max width   |
 
 - Tabs per role (V1):
   - **Student:** Chat, Catch-up, Exams (later), Notes (later), Profile.
@@ -41,7 +41,7 @@ Defined once in `styles/tokens.css` as CSS variables (same approach as the blog)
 
 ## Key screens
 
-**Chat (student).** Full-height conversation. Message input fixed at the bottom with the on-screen keyboard handled correctly. A **subject chip** above the input shows "All subjects" and can be tapped to pin one. Suggestion chips: "What was taught today?", "Explain the last topic", "What's in the next exam?". Answers stream in. Under each answer, **source chips** (date or syllabus unit) open a bottom sheet with the original entry. A small **label** marks the kind of content: *From syllabus*, *Reported in class*, *General explanation*, *Beta translation*. "Unrelated question" and "no answer found" have their own calm message styles. A quota meter appears only when close to the limit.
+**Chat (student).** Full-height conversation. Message input fixed at the bottom with the on-screen keyboard handled correctly. A **subject chip** above the input shows "All subjects" and can be tapped to pin one. Suggestion chips: "What was taught today?", "Explain the last topic", "What's in the next exam?". Answers stream in. Under each answer, **source chips** (date or syllabus unit) open a bottom sheet with the original entry. A small **label** marks the kind of content: _From syllabus_, _Reported in class_, _General explanation_, _Beta translation_. "Unrelated question" and "no answer found" have their own calm message styles. A quota meter appears only when close to the limit.
 
 **Catch-up (student).** A horizontal date strip (swipeable) with a range picker; below, one card per subject with the stored summary and the topics, plus "Ask a follow-up" that opens chat with that context.
 

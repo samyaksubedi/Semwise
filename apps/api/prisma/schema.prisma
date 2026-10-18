@@ -1,0 +1,14 @@
+// Semwise database schema. Plan: docs/data-model.md.
+// After editing: `pnpm db:migrate` creates and applies a migration.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  runtime             = "nodejs"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

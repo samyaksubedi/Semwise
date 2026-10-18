@@ -4,14 +4,14 @@ Semwise is a multi-tenant SaaS for colleges: an academic "memory" built from off
 
 ## Read first
 
-| Doc | What it holds |
-| --- | --- |
-| `docs/Semwise_Project_Context.md` | Product rules, roles, decisions, build order |
-| `docs/architecture.md` | Stack, repo layout, module pattern, AI layer, jobs, email, storage, deployment, build progress |
-| `docs/data-model.md` | Planned tables and constraints |
-| `docs/permissions.md` | Role x action matrix (the source for `authz` and its tests) |
-| `docs/app-flows.md` | Step-by-step flow of every feature |
-| `docs/ui-ux.md` | Web UI/UX rules (mobile first) |
+| Doc                               | What it holds                                                                                  |
+| --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `docs/Semwise_Project_Context.md` | Product rules, roles, decisions, build order                                                   |
+| `docs/architecture.md`            | Stack, repo layout, module pattern, AI layer, jobs, email, storage, deployment, build progress |
+| `docs/data-model.md`              | Planned tables and constraints                                                                 |
+| `docs/permissions.md`             | Role x action matrix (the source for `authz` and its tests)                                    |
+| `docs/app-flows.md`               | Step-by-step flow of every feature                                                             |
+| `docs/ui-ux.md`                   | Web UI/UX rules (mobile first)                                                                 |
 
 If code and docs disagree, stop and ask; do not silently pick one. When a decision changes, update the docs in the same commit.
 
@@ -37,7 +37,7 @@ If code and docs disagree, stop and ask; do not silently pick one. When a decisi
 ## Tests and external services
 
 - Tests use a real Postgres test database (`semwise_test`), Supertest and Vitest. **Mock OpenAI, R2 and email in tests**; never make real paid calls in tests. Qdrant and Redis run locally in Docker.
-- Local services: `pnpm db:up` (Postgres, Qdrant, Redis, Mailpit, and MinIO as a stand-in for R2).
+- Local services: `pnpm db:up` (Postgres, Qdrant, Redis, Mailpit, and SeaweedFS as an S3-compatible stand-in for R2; MinIO no longer ships public images).
 - Features whose keys are unset answer 503 instead of crashing. Ask the user for real keys (OpenAI, R2, Gmail app password) only when a manual end-to-end check needs them.
 
 ## Web rules

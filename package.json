@@ -1,0 +1,36 @@
+{
+  "name": "semwise",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.12.4",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:api": "pnpm --filter @semwise/shared build && pnpm --filter @semwise/api dev",
+    "dev:worker": "pnpm --filter @semwise/shared build && pnpm --filter @semwise/api dev:worker",
+    "build": "pnpm -r --workspace-concurrency=1 build",
+    "typecheck": "pnpm --filter @semwise/shared build && pnpm -r --workspace-concurrency=1 typecheck",
+    "test": "pnpm --filter @semwise/shared build && pnpm -r --workspace-concurrency=1 test",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "docker compose -f infra/docker-compose.dev.yml up -d --wait",
+    "db:down": "docker compose -f infra/docker-compose.dev.yml down",
+    "db:migrate": "pnpm --filter @semwise/api db:migrate",
+    "db:deploy": "pnpm --filter @semwise/api db:deploy",
+    "db:studio": "pnpm --filter @semwise/api db:studio",
+    "super-admin:create": "pnpm --filter @semwise/api super-admin:create"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2"
+  }
+}

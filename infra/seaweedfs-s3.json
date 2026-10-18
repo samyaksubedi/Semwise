@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "semwise",
+      "credentials": [{ "accessKey": "semwise", "secretKey": "semwise-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

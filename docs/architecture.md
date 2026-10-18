@@ -19,21 +19,21 @@ Product decisions live in [Semwise_Project_Context.md](Semwise_Project_Context.m
 | Logging         | Pino                                                                                                |
 | Tests           | Vitest + Supertest against a real Postgres test database                                            |
 | Tooling         | pnpm workspaces, ESLint, Prettier, TypeScript (strict), GitHub Actions CI                           |
-| Local services  | Docker Compose (Postgres, Qdrant, Redis, Mailpit for catching emails, MinIO in place of R2)         |
+| Local services  | Docker Compose (Postgres, Qdrant, Redis, Mailpit for catching emails, SeaweedFS S3 in place of R2)  |
 | Deploy          | Everything on one VPS through Coolify: web, API, worker, Postgres, Qdrant, Redis                    |
 
 ## At a glance
 
-| Part                          | Where it runs     | Folder                  |
-| ----------------------------- | ----------------- | ----------------------- |
-| Web app, all roles (Next.js)  | VPS via Coolify   | `apps/web`              |
-| API (Express + TypeScript)    | VPS via Coolify   | `apps/api`              |
-| Worker (BullMQ jobs)          | VPS via Coolify   | `apps/api` (same image) |
-| Database (Postgres + Prisma)  | VPS via Coolify   | `apps/api/prisma`       |
-| Vector index (Qdrant)         | VPS via Coolify   | `infra/`                |
-| Redis                         | VPS via Coolify   | `infra/`                |
-| Files (PDFs, audio, images)   | Cloudflare R2     | n/a                     |
-| Shared schemas and types      | Imported by both  | `packages/shared`       |
+| Part                         | Where it runs    | Folder                  |
+| ---------------------------- | ---------------- | ----------------------- |
+| Web app, all roles (Next.js) | VPS via Coolify  | `apps/web`              |
+| API (Express + TypeScript)   | VPS via Coolify  | `apps/api`              |
+| Worker (BullMQ jobs)         | VPS via Coolify  | `apps/api` (same image) |
+| Database (Postgres + Prisma) | VPS via Coolify  | `apps/api/prisma`       |
+| Vector index (Qdrant)        | VPS via Coolify  | `infra/`                |
+| Redis                        | VPS via Coolify  | `infra/`                |
+| Files (PDFs, audio, images)  | Cloudflare R2    | n/a                     |
+| Shared schemas and types     | Imported by both | `packages/shared`       |
 
 ## Repo layout
 
@@ -110,32 +110,32 @@ Rules (the blog's, plus the multi-tenant ones):
 
 ## API modules (planned)
 
-| Module            | What it does                                                                                                         | Feature # |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------- | --------- |
-| `health`          | `/v1/health` (alive) and `/v1/health/ready` (database, Redis, Qdrant)                                        | 0         |
-| `auth`            | Login, logout, session, password reset, invite acceptance; sessions are Postgres rows with an HttpOnly cookie        | 1         |
-| `tenants`         | Super Admin: create and manage colleges, provision the first University Admin, tenant settings (timezone)            | 1, 2      |
-| `users`           | The single User entity                                                                                               | 1         |
-| `memberships`     | Roles with scope (tenant, program, section, class), including CR grants                                              | 1, 3      |
-| `authz`           | The permission matrix and `can(...)` checks                                                                          | 1         |
-| `audit`           | Audit log of admin actions, approvals, takedowns, syllabus and scope changes                                         | 1         |
-| `usage`           | AI usage ledger, quotas, budgets, plan limits                                                                        | 1, 15     |
-| `programs` / `batches` / `semesters` / `subjects` / `sections` | Academic structure                                                      | 2         |
-| `invitations`     | Student, teacher and admin email invites                                                                             | 3         |
-| `enrollments`     | Semester-specific section assignment with history                                                                    | 3         |
-| `classes`         | Subject x section x teacher                                                                                          | 4         |
-| `files`           | Signed uploads and downloads on Cloudflare R2 for PDFs, audio and images                                                                         | 5         |
-| `syllabus`        | PDF extraction, draft tree, natural-language change requests (as diffs), versions, publish, copy from previous batch | 5         |
-| `knowledge`       | Chunking, embeddings, Qdrant sync, live-version handling                                                             | 5, 6      |
-| `ai`              | Provider wrapper, prompts, router, model selection, metering                                                         | 5, 8      |
-| `sessions`        | Class sessions and CR/teacher entries, versions, topic mapping, duplicate detection                                  | 6         |
-| `approvals`       | Approval settings (default, override, lock), queue, reminders, escalation                                            | 6         |
-| `notifications`   | Email delivery (Nodemailer) through a throttled queue, with the protections listed under Email                       | 3, 6      |
-| `chat`            | Student Q&A, conversations, syllabus classification, labeled answers, citations                                      | 8         |
-| `catchup`         | Date-range summaries                                                                                                 | 9         |
-| `notes`           | Private notes, inbox, "Check my notes"                                                                               | 10        |
-| `exams`           | Exams, per-subject entries, scope versions, natural-language scope input                                             | 11        |
-| `study`           | Study plan, study cards, question bank, rubric grading, mastery                                                      | 12, 13, 14 |
+| Module                                                         | What it does                                                                                                         | Feature #  |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `health`                                                       | `/v1/health` (alive) and `/v1/health/ready` (database, Redis, Qdrant)                                                | 0          |
+| `auth`                                                         | Login, logout, session, password reset, invite acceptance; sessions are Postgres rows with an HttpOnly cookie        | 1          |
+| `tenants`                                                      | Super Admin: create and manage colleges, provision the first University Admin, tenant settings (timezone)            | 1, 2       |
+| `users`                                                        | The single User entity                                                                                               | 1          |
+| `memberships`                                                  | Roles with scope (tenant, program, section, class), including CR grants                                              | 1, 3       |
+| `authz`                                                        | The permission matrix and `can(...)` checks                                                                          | 1          |
+| `audit`                                                        | Audit log of admin actions, approvals, takedowns, syllabus and scope changes                                         | 1          |
+| `usage`                                                        | AI usage ledger, quotas, budgets, plan limits                                                                        | 1, 15      |
+| `programs` / `batches` / `semesters` / `subjects` / `sections` | Academic structure                                                                                                   | 2          |
+| `invitations`                                                  | Student, teacher and admin email invites                                                                             | 3          |
+| `enrollments`                                                  | Semester-specific section assignment with history                                                                    | 3          |
+| `classes`                                                      | Subject x section x teacher                                                                                          | 4          |
+| `files`                                                        | Signed uploads and downloads on Cloudflare R2 for PDFs, audio and images                                             | 5          |
+| `syllabus`                                                     | PDF extraction, draft tree, natural-language change requests (as diffs), versions, publish, copy from previous batch | 5          |
+| `knowledge`                                                    | Chunking, embeddings, Qdrant sync, live-version handling                                                             | 5, 6       |
+| `ai`                                                           | Provider wrapper, prompts, router, model selection, metering                                                         | 5, 8       |
+| `sessions`                                                     | Class sessions and CR/teacher entries, versions, topic mapping, duplicate detection                                  | 6          |
+| `approvals`                                                    | Approval settings (default, override, lock), queue, reminders, escalation                                            | 6          |
+| `notifications`                                                | Email delivery (Nodemailer) through a throttled queue, with the protections listed under Email                       | 3, 6       |
+| `chat`                                                         | Student Q&A, conversations, syllabus classification, labeled answers, citations                                      | 8          |
+| `catchup`                                                      | Date-range summaries                                                                                                 | 9          |
+| `notes`                                                        | Private notes, inbox, "Check my notes"                                                                               | 10         |
+| `exams`                                                        | Exams, per-subject entries, scope versions, natural-language scope input                                             | 11         |
+| `study`                                                        | Study plan, study cards, question bank, rubric grading, mastery                                                      | 12, 13, 14 |
 
 ## Request pipeline
 
@@ -174,34 +174,34 @@ Rate limits count in Redis (shared by every API instance). AI routes also pass t
 
 Prices are per 1M tokens unless stated, taken from third-party price trackers dated early October 2026 (they disagree slightly with each other). They are not authoritative: confirm on OpenAI's official pricing page before launch, and keep the live prices in the `PriceTable` so the ledger stays accurate.
 
-| Task                                                                                  | Default model          | Input    | Output   | Cached input | Notes                                                      |
-| ------------------------------------------------------------------------------------- | ---------------------- | -------- | -------- | ------------ | ---------------------------------------------------------- |
-| Router, classification, date parsing, language detection, summaries                   | GPT-5.6 Luna           | $0.20    | $1.20    | $0.02        | Cheapest current model                                     |
-| Student answers (grounded in retrieved content)                                       | GPT-5.4 Mini           | $0.75    | $4.50    | $0.075       | Escalates to Terra for complex or code questions           |
-| Hard questions, grading, syllabus extraction, study material, note fact-check, vision | GPT-5.6 Terra          | $2.00    | $12.00   | $0.20        | Confirm image input in testing; fall back to Mini if enough |
-| Embeddings                                                                            | text-embedding-3-small | $0.02    | n/a      | n/a          | English-first content; try -large ($0.13) only if the Nepali test shows retrieval misses |
-| Voice dictation                                                                       | gpt-transcribe         | $0.0045 per minute | n/a | n/a   | Benchmark against gpt-4o-mini-transcribe (about $0.003 per minute) and gpt-4o-transcribe (about $0.006 per minute) on real CR clips |
+| Task                                                                                  | Default model          | Input              | Output | Cached input | Notes                                                                                                                               |
+| ------------------------------------------------------------------------------------- | ---------------------- | ------------------ | ------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Router, classification, date parsing, language detection, summaries                   | GPT-5.6 Luna           | $0.20              | $1.20  | $0.02        | Cheapest current model                                                                                                              |
+| Student answers (grounded in retrieved content)                                       | GPT-5.4 Mini           | $0.75              | $4.50  | $0.075       | Escalates to Terra for complex or code questions                                                                                    |
+| Hard questions, grading, syllabus extraction, study material, note fact-check, vision | GPT-5.6 Terra          | $2.00              | $12.00 | $0.20        | Confirm image input in testing; fall back to Mini if enough                                                                         |
+| Embeddings                                                                            | text-embedding-3-small | $0.02              | n/a    | n/a          | English-first content; try -large ($0.13) only if the Nepali test shows retrieval misses                                            |
+| Voice dictation                                                                       | gpt-transcribe         | $0.0045 per minute | n/a    | n/a          | Benchmark against gpt-4o-mini-transcribe (about $0.003 per minute) and gpt-4o-transcribe (about $0.006 per minute) on real CR clips |
 
 - The Batch API gives a 50% discount with a 24-hour window; study cards and question banks use it.
 - Do **not** use GPT-5.4 Nano: it is marked deprecated, with API removal planned for April 1, 2027. GPT-6 Astra and GPT-5.5 Pro cost far more and are not needed.
 
 ### Unit costs (assumption-based)
 
-| Operation                                                          | Tokens assumed                 | Cost            |
-| ------------------------------------------------------------------ | ------------------------------ | --------------- |
-| Router and syllabus check per question (Luna)                      | 1,500 in, 100 out              | $0.0004         |
-| Answer by Mini                                                     | 4,000 in, 500 out              | $0.0053         |
-| Answer by Terra                                                    | 4,000 in, 500 out              | $0.014          |
-| **Average Q&A question** (80% Mini, 20% Terra, router, +25% chat history) |                         | **about $0.009** |
-| Grading one study-room answer (Terra)                              | 1,500 in, 500 out              | $0.009          |
-| Checking one note (Terra)                                          | 2,000 in, 600 out              | $0.011          |
-| Syllabus extraction plus review requests, per subject (Terra)      | 20k in 4k out, then 5 x (6k in 1k out) | about $0.21 |
-| Organizing and summarizing one CR entry (Mini plus Luna)           | 3k in, 900 out                 | $0.005          |
-| Dictation of 2 minutes (gpt-transcribe)                            | 2 minutes                      | $0.009          |
-| Reading a photo (Terra vision)                                     | about 2k in, 400 out           | about $0.009    |
-| Study card per topic (Terra; half price with Batch)                | 3k in, 1k out                  | $0.018 ($0.009) |
-| Question bank per topic, 10 questions with rubrics (Terra; Batch)  | 3k in, 3k out                  | $0.042 ($0.021) |
-| Embedding a 40-page syllabus                                       | about 20k tokens               | $0.0004         |
+| Operation                                                                 | Tokens assumed                         | Cost             |
+| ------------------------------------------------------------------------- | -------------------------------------- | ---------------- |
+| Router and syllabus check per question (Luna)                             | 1,500 in, 100 out                      | $0.0004          |
+| Answer by Mini                                                            | 4,000 in, 500 out                      | $0.0053          |
+| Answer by Terra                                                           | 4,000 in, 500 out                      | $0.014           |
+| **Average Q&A question** (80% Mini, 20% Terra, router, +25% chat history) |                                        | **about $0.009** |
+| Grading one study-room answer (Terra)                                     | 1,500 in, 500 out                      | $0.009           |
+| Checking one note (Terra)                                                 | 2,000 in, 600 out                      | $0.011           |
+| Syllabus extraction plus review requests, per subject (Terra)             | 20k in 4k out, then 5 x (6k in 1k out) | about $0.21      |
+| Organizing and summarizing one CR entry (Mini plus Luna)                  | 3k in, 900 out                         | $0.005           |
+| Dictation of 2 minutes (gpt-transcribe)                                   | 2 minutes                              | $0.009           |
+| Reading a photo (Terra vision)                                            | about 2k in, 400 out                   | about $0.009     |
+| Study card per topic (Terra; half price with Batch)                       | 3k in, 1k out                          | $0.018 ($0.009)  |
+| Question bank per topic, 10 questions with rubrics (Terra; Batch)         | 3k in, 3k out                          | $0.042 ($0.021)  |
+| Embedding a 40-page syllabus                                              | about 20k tokens                       | $0.0004          |
 
 - The router escalates a question from Mini to Terra when it detects a complex, multi-step or code question.
 
@@ -295,7 +295,7 @@ Features whose keys are unset answer 503 instead of crashing, as the blog does. 
 
 ## Local development
 
-- `pnpm db:up` starts Postgres, Qdrant, Redis, Mailpit (catches email) and MinIO (S3-compatible stand-in for R2) from `infra/docker-compose.dev.yml`.
+- `pnpm db:up` starts Postgres, Qdrant, Redis, Mailpit (catches email) and SeaweedFS (S3-compatible stand-in for R2; MinIO no longer publishes public images) from `infra/docker-compose.dev.yml`.
 - `pnpm dev` runs `scripts/dev.mjs`: builds shared, starts the API and the worker, waits for health, then starts the web app (the order matters on Windows).
 - Everyday commands match the blog: `pnpm lint`, `pnpm format`, `pnpm typecheck`, `pnpm test`, `pnpm build`, plus `db:migrate`, `db:deploy`, `db:studio` and a `super-admin:create` script.
 - `docs/local-setup.md` will be a step-by-step checklist like the blog's, written during the scaffold.
@@ -304,14 +304,14 @@ Features whose keys are unset answer 503 instead of crashing, as the blog does. 
 
 Everything runs on one VPS, managed by Coolify:
 
-| Service  | Notes                                                                                           |
-| -------- | ----------------------------------------------------------------------------------------------- |
-| web      | Next.js container                                                                               |
-| api      | Express container; on start it runs `prisma migrate deploy`, then the server (as in the blog)   |
-| worker   | Same image as the API, started with the worker command                                          |
-| postgres | Coolify database service, scheduled backups to R2                                               |
-| qdrant   | Coolify service with a persistent volume; periodic snapshots                                    |
-| redis    | Coolify service with AOF persistence, `noeviction`, a password, internal network only           |
+| Service  | Notes                                                                                         |
+| -------- | --------------------------------------------------------------------------------------------- |
+| web      | Next.js container                                                                             |
+| api      | Express container; on start it runs `prisma migrate deploy`, then the server (as in the blog) |
+| worker   | Same image as the API, started with the worker command                                        |
+| postgres | Coolify database service, scheduled backups to R2                                             |
+| qdrant   | Coolify service with a persistent volume; periodic snapshots                                  |
+| redis    | Coolify service with AOF persistence, `noeviction`, a password, internal network only         |
 
 - Put the web app and the API on subdomains of one domain (for example `app.` and `api.`), so session cookies and origin checks are simple.
 - Only the web and API services are public; Postgres, Qdrant and Redis are reachable only on the internal Docker network.
@@ -332,7 +332,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 
 ## Build progress
 
-- [ ] 0. Scaffold: monorepo, shared package, lint, tests, CI, local Postgres and Qdrant
+- [x] 0. Scaffold: monorepo, shared package, lint, tests, CI, local Postgres and Qdrant
 - [ ] 1. Foundations: auth, tenants, users, memberships, authz, audit, isolation tests, usage ledger
 - [ ] 2. Academic structure and tenant provisioning
 - [ ] 3. Invitations and enrollment

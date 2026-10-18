@@ -5,6 +5,7 @@ The end-to-end flow of every feature, from the user's side and from the system's
 ## Cross-cutting flows
 
 **Every request**
+
 1. Browser sends the request with its session cookie.
 2. API checks origin and rate limit, loads the session, and resolves the **tenant** from the user's active membership (never from the client).
 3. Controller validates the input with the shared Zod schema.
@@ -13,6 +14,7 @@ The end-to-end flow of every feature, from the user's side and from the system's
 6. Response uses the standard envelope; failures use `AppError` codes and carry a request ID.
 
 **Every AI call**
+
 1. Service asks the `ai` module for a task (route, answer, grade, extract ...).
 2. `ai` checks the user and tenant **quota**; if exceeded, it stops with a clear message.
 3. It calls OpenAI with the model configured for that task, passing retrieved text as delimited data.
@@ -20,6 +22,7 @@ The end-to-end flow of every feature, from the user's side and from the system's
 5. Output is validated against a schema before use.
 
 **Every background job** (PDF extraction, OCR, transcription, embedding, summaries, emails, reminders)
+
 1. The service stores the source and enqueues a job in Redis (BullMQ) with an idempotency key.
 2. The worker process picks it up; progress is stored as queued, running, failed or done.
 3. Failures retry with backoff; after the last retry the job is marked failed and the user sees a retry option.
@@ -28,6 +31,7 @@ The end-to-end flow of every feature, from the user's side and from the system's
 ## 1. Foundations (auth, tenants, users, roles)
 
 **Login**
+
 1. User enters email and password. API checks the Argon2 hash; repeated failures lock the account briefly.
 2. A session row is created; the browser gets an HttpOnly cookie. Only a hash of the token is stored.
 3. If the user belongs to several colleges, they pick the active one; the choice is stored in the session.
@@ -103,6 +107,7 @@ The end-to-end flow of every feature, from the user's side and from the system's
 ## 9. Catch-up and date-based questions
 
 **In chat ("what was taught today / on Monday / while I was absent")**
+
 1. A cheap model turns the phrase into a date range in the college's timezone.
 2. Postgres returns all published entries for the student's section in that range, across subjects.
 3. The AI combines the stored summaries into a per-subject answer.

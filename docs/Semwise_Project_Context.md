@@ -83,6 +83,7 @@ Only **Program Admin, University Admin, Teacher and CR** put shared context into
 3. The Program Admin can grant CR status to an existing student.
 
 Requirements:
+
 - Invite tokens are single-use, expiring, stored hashed, and bound to the invited email. Resending is rate-limited.
 - Invited (pending) students have a distinct state until verified.
 - Admins can revoke, re-invite, correct a wrong email, and deactivate students who leave.
@@ -101,6 +102,7 @@ The Program Admin uploads **one syllabus PDF per subject per batch**. The pipeli
 6. **Publish** creates a syllabus version. Only published syllabi are chunked and embedded.
 
 Further rules:
+
 - Each subject has its own **versions with effective dates**; old versions are never overwritten. Class sessions keep a link to the version in force when they were taught. A new version triggers re-indexing and flags affected topic mappings.
 - Subject status: no syllabus, draft or published, with a batch dashboard of what is missing. A published syllabus is required before classes can be created for that subject.
 - **Copy from previous batch:** an admin can copy a subject's syllabus from an earlier batch, then review it. The copy is independent from then on.
@@ -148,31 +150,39 @@ A mistake and a later correction must never both reach the AI.
 ## 10. AI assistant (student Q&A)
 
 ### Chat design
+
 - One chat, no forced subject selection. A cheap router model infers the subject; the student can optionally pin a subject. Ambiguous questions prompt a clarification or check both subjects.
 - Chat history is private per student; long histories are summarized to control cost.
 
 ### Date-based questions ("what was taught today?")
+
 Not a vector search. A cheap model turns "today / yesterday / Monday to Wednesday" into a date range in the tenant's timezone; PostgreSQL returns all published entries for the student's section across all subjects in that range; the AI summarizes them.
 
 ### Catch-up
+
 A dedicated view where an absent student picks dates and sees per-subject summaries (precomputed at publish time). Chat can follow up from there.
 
 ### Syllabus check and answer labeling
+
 Each question is classified as:
+
 1. **In syllabus:** full answer from class material and syllabus, with source references.
 2. **Related but outside the syllabus:** **labeled answer**, which states clearly that it is a general explanation, not part of the syllabus or what was taught.
 3. **Unrelated:** polite decline. This protects the product from being used as a free general chatbot.
 
 ### Model tiers
+
 - Cheap model: routing, date parsing, language detection, syllabus classification, summaries.
 - Strong model: answering real doubts and grading. Model choice per task is configuration.
 
 ### Language
+
 - **English first.** Stored content (syllabus, summaries) is English-first.
 - **Nepali is a labeled beta, pending a test.** Nepali and Romanized-Nepali questions are detected and rewritten into English for retrieval, with the answer returned in the student's language. Expected weak points: Romanized Nepali, technical terms, cross-language retrieval, and especially Nepali speech-to-text.
 - **Test before committing:** about 20 real Nepali and Romanized student questions and about 10 real CR dictation clips, checking topic retrieval, answer correctness and transcript usability.
 
 ### Honesty rules
+
 If the knowledge base does not contain the answer, say so. Always separate what was reported as taught from general explanation. In V1 students ask by text only.
 
 ## 11. Student notes
