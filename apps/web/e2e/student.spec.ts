@@ -20,12 +20,20 @@ test("student asks a question and opens its source", async ({ page }) => {
   await page.waitForURL(/\/chat\/.+/);
   expect((await fakeAiCalls()).filter((c) => c === "chat_answer").length).toBe(before + 1);
 
-  await answer.getByText("Sources").locator("..").getByRole("button").first().click();
+  // Screen readers hear the answer, and keyboard focus is back in the question box.
+  await expect(page.locator(".sr-only[aria-live=polite]")).toContainText("Answer: Here is what");
+  await expect(page.getByLabel("Ask a question…")).toBeFocused();
+
+  // Open a source by keyboard; Escape closes it and focus returns to the chip.
+  const chip = answer.getByRole("button", { name: /^Source 1:/ });
+  await chip.focus();
+  await page.keyboard.press("Enter");
   const source = dialog(page, "Source");
   await expect(source).toBeVisible();
   await expect(source.getByText(/Programming in C|Mathematics I/).first()).toBeVisible();
-  await source.getByRole("button", { name: "Close" }).last().click();
+  await page.keyboard.press("Escape");
   await expect(source).toBeHidden();
+  await expect(chip).toBeFocused();
 });
 
 test("student reads a catch-up range and narrows it", async ({ page }) => {

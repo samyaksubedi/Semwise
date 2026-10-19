@@ -107,6 +107,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh md:flex">
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-control bg-surface font-medium shadow-lift focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:px-4 focus:py-3"
+      >
+        {t.nav.skip}
+      </a>
       <Sidebar
         items={items}
         pathname={pathname}
@@ -122,7 +128,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         />
         <main
           id="main"
+          tabIndex={-1}
           className={cn(
+            "focus:outline-none",
             "pb-tabbar mx-auto w-full flex-1 px-4 pt-4 md:px-8 md:pt-8 md:pb-10",
             // The syllabus review shows three panels side by side on wide screens.
             pathname.startsWith("/admin/syllabus/") ? "max-w-[1400px]" : "max-w-5xl",
@@ -145,7 +153,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-/** A count on a nav item; the number is also read out after the label. */
+/** "Approvals, 1 waiting": the label first, then the count (the badge itself is not read). */
+function navName(item: NavItem): string | undefined {
+  return item.badge ? `${item.label}, ${item.badge} ${t.nav.waitingCount}` : undefined;
+}
+
+/** A count on a nav item; links with a badge carry their full name in aria-label. */
 function Badge({ count, floating }: { count: number; floating?: boolean }) {
   return (
     <span
@@ -155,7 +168,6 @@ function Badge({ count, floating }: { count: number; floating?: boolean }) {
       )}
     >
       {count}
-      <span className="sr-only"> {t.nav.waitingCount}</span>
     </span>
   );
 }
@@ -243,6 +255,7 @@ function Sidebar({
                 <Link
                   href={item.href}
                   aria-current={active ? "page" : undefined}
+                  aria-label={navName(item)}
                   title={collapsed ? item.label : undefined}
                   className={cn(
                     "flex h-11 items-center gap-3 rounded-control px-3 text-[15px] font-medium transition-calm",
@@ -304,6 +317,7 @@ function BottomTabs({ items, pathname }: { items: NavItem[]; pathname: string })
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                aria-label={navName(item)}
                 className={tab(active)}
               >
                 <span className="relative">

@@ -73,6 +73,23 @@ Build once in `components/ui` and reuse: Button, IconButton, Input, Textarea, Se
 - Icons have labels; status is shown by text and icon, not colour alone; form fields have visible labels.
 - Respect reduced motion and text-size changes.
 
+### Keyboard pass (2026-10-19)
+
+A scripted keyboard-only run (Tab, Enter, Escape, arrow keys; production build, phone width, Chromium) through sign-in, student chat with a source, CR entry, teacher approvals (including the inline reject reason) and admin syllabus review (list, live syllabus, draft, publish confirmation). It recorded the focus order, the accessible name and focus ring of every stop, dialog focus on open, Tab cycling and Escape, and the live regions.
+
+Fixed:
+
+- A **Skip to content** link is the first stop on every signed-in page (`main` takes focus).
+- Sheets return focus to their opener when they close, including sheets that unmount on close (the chat source sheet lost focus to the page before).
+- A confirmation opened on top of another sheet closed both, and every sheet shared one title id, so dialogs were announced with the wrong title.
+- Chat answers are read out through a polite announcer that lives above the routes (the first answer arrives with a navigation, so an in-page live region would stay silent), and with a mouse or keyboard focus returns to the question box after that navigation. Source chips are named "Source 1: Syllabus · Unit 4 ...".
+- Spoken names ran words together: topic tree rows ("History of CTopic"), a tab with a count ("Topics1") and the Approvals tab ("1 waitingApprovals", now "Approvals, 1 waiting"). CR "Replace" buttons name the CR they replace.
+- The photo button (a visually hidden file input inside a label) showed no focus ring; the label now shows it.
+
+Checked and fine: logical order (top bar, content, bottom tabs), labelled fields and buttons, the sign-in error is an alert and focus stays in the form, tabs move with arrow keys (one Tab stop), modal sheets keep Tab inside (the browser's own controls aside), Escape closes and returns focus, approvals' Reject moves focus to the reason field, the syllabus reading and entry organizing notices are status regions, toasts are polite.
+
+Not done or known gaps: no run with a real screen reader (NVDA, VoiceOver, TalkBack); colour contrast was not measured with a tool; sheets put first focus on their close button rather than the first field; native date inputs are three Tab stops each (browser behaviour); the walkthrough covered the five flows above, not every admin screen.
+
 ## Performance
 
 - Server Components by default; client components only where interaction needs them.

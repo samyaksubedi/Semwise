@@ -545,11 +545,23 @@ function TopicTree({
                         `${KIND_LABEL.UNIT} ${version.topics.indexOf(node) + 1}: `}
                       {node.title}
                     </span>
+                    {/* The pieces sit in a flex row; the commas keep them apart when read out. */}
                     <span className="flex flex-wrap items-center gap-2 text-xs text-muted">
-                      {node.kind !== "UNIT" && <span>{KIND_LABEL[node.kind]}</span>}
-                      {node.hours !== null && <span>{t.syllabus.hours(node.hours)}</span>}
+                      {node.kind !== "UNIT" && (
+                        <span>
+                          <span className="sr-only">, </span>
+                          {KIND_LABEL[node.kind]}
+                        </span>
+                      )}
+                      {node.hours !== null && (
+                        <span>
+                          <span className="sr-only">, </span>
+                          {t.syllabus.hours(node.hours)}
+                        </span>
+                      )}
                       {doubtful && (
                         <StatusPill tone="warning" icon={AlertTriangle}>
+                          <span className="sr-only">, </span>
                           {t.syllabus.check}
                         </StatusPill>
                       )}

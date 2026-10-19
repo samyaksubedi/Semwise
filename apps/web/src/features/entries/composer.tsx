@@ -380,6 +380,8 @@ export function EntryComposer({
             <label
               className={cn(
                 "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-control border border-border bg-surface px-4 text-[15px] font-medium transition-calm hover:border-border-strong",
+                // The file input is visually hidden: show its keyboard focus on the label.
+                "has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus",
                 (busyMedia || !draft.classId) && "pointer-events-none opacity-50",
               )}
             >

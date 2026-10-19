@@ -53,6 +53,7 @@ export function Tabs<T extends string>({
             {item.label}
             {item.badge ? (
               <span className="rounded-full bg-accent px-1.5 text-xs text-on-accent">
+                <span className="sr-only">, </span>
                 {item.badge}
               </span>
             ) : null}

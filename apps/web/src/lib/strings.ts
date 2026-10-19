@@ -31,6 +31,7 @@ export const t = {
     more: "More",
     menu: "Menu",
     mainNav: "Main navigation",
+    skip: "Skip to content",
     waitingCount: "waiting",
   },
 
@@ -538,6 +539,7 @@ export const t = {
       `Syllabus · ${unitNo ? `Unit ${unitNo}` : ""}${unit ? `: ${unit}` : ""}`,
     sourceClass: (day: string) => `Class · ${day}`,
     sourceTitle: "Source",
+    sourceNamed: (n: string, label: string) => `Source ${n}: ${label}`,
     syllabusVersion: (n: number) => `Official syllabus, version ${n}`,
     classVersion: (n: number) => `Reported in class, version ${n}`,
     unitTopic: (unit: string, topic: string | null) => (topic ? `${unit} › ${topic}` : unit),
@@ -551,6 +553,7 @@ export const t = {
     deleted: "Chat deleted",
     you: "You",
     assistant: "Semwise",
+    answered: (answer: string) => `Answer: ${answer}`,
   },
 
   catchup: {

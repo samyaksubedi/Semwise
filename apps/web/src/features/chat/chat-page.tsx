@@ -37,7 +37,7 @@ import {
   StatusPill,
   type Tone,
 } from "@/components/ui/surface";
-import { useToast } from "@/components/ui/toast";
+import { useAnnounce, useToast } from "@/components/ui/toast";
 import { TopicList, useMyClasses } from "@/features/entries/shared";
 import { ApiError, api } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -64,6 +64,7 @@ export function ChatPage({ id }: { id?: string }) {
   const params = useSearchParams();
   const client = useQueryClient();
   const toast = useToast();
+  const announce = useAnnounce();
   const conversations = useQuery({
     queryKey: keys.list,
     queryFn: () => api<ConversationSummaryView[]>("/chat/conversations"),
@@ -119,6 +120,8 @@ export function ChatPage({ id }: { id?: string }) {
       setText("");
     },
     onSuccess: ({ conversationId, result }) => {
+      // Read the answer out (source markers dropped); the visible one has the source buttons.
+      announce(t.chat.answered(result.answer.content.replace(/\s*\[S\d+\]/g, "")));
       setQuota(result.quota);
       client.setQueryData<ConversationView>(keys.one(conversationId), (old) =>
         old ? { ...old, messages: [...old.messages, result.question, result.answer] } : old,
@@ -145,6 +148,13 @@ export function ChatPage({ id }: { id?: string }) {
       router.replace("/chat");
     },
   });
+
+  // The first question moves to /chat/<id>, a new page: with a keyboard, focus goes back to the
+  // question box (not on touch screens, where it would pop the keyboard up).
+  useEffect(() => {
+    if (id && document.activeElement === document.body && matchMedia("(pointer: fine)").matches)
+      input.current?.focus({ preventScroll: true });
+  }, [id, messages.length]);
 
   // Keep the newest turn in view.
   useEffect(() => {
@@ -436,6 +446,7 @@ function Message({ message }: { message: MessageView }) {
               <button
                 key={c.key}
                 type="button"
+                aria-label={t.chat.sourceNamed(c.key.slice(1), citationLabel(c, today))}
                 onClick={() => setOpen(c)}
                 className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-sm transition-calm hover:border-accent"
               >

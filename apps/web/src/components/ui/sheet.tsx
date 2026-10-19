@@ -30,9 +30,15 @@ export function Sheet({
   const titleId = useId();
   useEffect(() => {
     const dialog = ref.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
+    if (!dialog || !open) return;
+    // Many sheets unmount when they close, which skips the browser's own focus return: put
+    // focus back on whatever opened the sheet ourselves.
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!dialog.open) dialog.showModal();
+    return () => {
+      if (dialog.open) dialog.close();
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
   }, [open]);
 
   return (
