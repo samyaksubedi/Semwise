@@ -25,31 +25,38 @@ enum TenantStatus {
 
 /// One college. Created by the Super Admin.
 model Tenant {
-  id            String          @id @default(cuid())
-  name          String
-  slug          String          @unique
+  id               String                  @id @default(cuid())
+  name             String
+  slug             String                  @unique
   /// IANA timezone, e.g. Asia/Kathmandu. "Today" and date ranges are computed in it.
-  timezone      String
-  status        TenantStatus    @default(ACTIVE)
-  settings      Json            @default("{}")
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  memberships   Membership[]
-  auditLogs     AuditLog[]
-  aiUsage       AiUsage[]
-  emailLogs     EmailLog[]
-  plan          TenantPlan?
-  quotas        Quota[]
-  programs      Program[]
-  batches       Batch[]
-  semesters     Semester[]
-  sections      Section[]
-  subjects      Subject[]
-  invitations   Invitation[]
-  students      StudentRecord[]
-  enrollments   Enrollment[]
-  classes       Class[]
-  classTeachers ClassTeacher[]
+  timezone         String
+  status           TenantStatus            @default(ACTIVE)
+  settings         Json                    @default("{}")
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  memberships      Membership[]
+  auditLogs        AuditLog[]
+  aiUsage          AiUsage[]
+  emailLogs        EmailLog[]
+  plan             TenantPlan?
+  quotas           Quota[]
+  programs         Program[]
+  batches          Batch[]
+  semesters        Semester[]
+  sections         Section[]
+  subjects         Subject[]
+  invitations      Invitation[]
+  students         StudentRecord[]
+  enrollments      Enrollment[]
+  classes          Class[]
+  classTeachers    ClassTeacher[]
+  files            FileObject[]
+  syllabi          Syllabus[]
+  syllabusVersions SyllabusVersion[]
+  syllabusTopics   SyllabusTopic[]
+  syllabusPages    SyllabusPage[]
+  syllabusChanges  SyllabusChangeRequest[]
+  indexedChunks    IndexedChunk[]
 
   @@map("tenants")
 }
@@ -82,6 +89,7 @@ model User {
   invitationsSent  Invitation[]    @relation("InvitationInvitedBy")
   studentRecords   StudentRecord[]
   classesTaught    ClassTeacher[]
+  filesUploaded    FileObject[]
 
   @@map("users")
 }
@@ -400,6 +408,7 @@ model Semester {
   invitations Invitation[]
   enrollments Enrollment[]
   classes     Class[]
+  syllabi     Syllabus[]
 
   @@unique([batchId, number])
   @@unique([id, batchId, programId, tenantId])
@@ -451,6 +460,7 @@ model Subject {
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   classes    Class[]
+  syllabus   Syllabus?
 
   @@unique([semesterId, code])
   @@unique([id, semesterId, batchId, programId, tenantId])
@@ -618,4 +628,241 @@ model ClassTeacher {
   @@unique([classId, userId])
   @@index([tenantId, userId])
   @@map("class_teachers")
+}
+
+// ---------- Files ----------
+
+enum FileKind {
+  SYLLABUS_PDF
+  AUDIO
+  PHOTO
+}
+
+enum FileStatus {
+  /// Upload URL issued; the bytes are not checked yet.
+  PENDING
+  READY
+  DELETED
+}
+
+/// A file in object storage (Cloudflare R2). Key: tenants/<tenantId>/<area>/<id>.
+model FileObject {
+  id               String            @id @default(cuid())
+  tenantId         String
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storageKey       String            @unique
+  mime             String
+  size             Int
+  kind             FileKind
+  /// What the file belongs to, for download permission checks.
+  programId        String?
+  batchId          String?
+  semesterId       String?
+  subjectId        String?
+  sectionId        String?
+  classId          String?
+  uploadedById     String?
+  uploadedBy       User?             @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  status           FileStatus        @default(PENDING)
+  deleteAfter      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  syllabusVersions SyllabusVersion[]
+
+  @@unique([id, tenantId])
+  @@index([tenantId, kind, status])
+  @@index([status, deleteAfter])
+  @@map("files")
+}
+
+// ---------- Syllabus ----------
+
+/// The syllabus of one subject (one batch semester). subjectId stays empty while an upload
+/// waits for the admin to confirm the subject the AI suggested.
+model Syllabus {
+  id               String            @id @default(cuid())
+  tenantId         String
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programId        String
+  batchId          String
+  semesterId       String
+  semester         Semester          @relation(fields: [semesterId, batchId, programId, tenantId], references: [id, batchId, programId, tenantId], onDelete: Cascade)
+  subjectId        String?           @unique
+  subject          Subject?          @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  /// The live (published) version; the AI only ever sees this one.
+  currentVersionId String?           @unique
+  currentVersion   SyllabusVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  versions         SyllabusVersion[] @relation("SyllabusVersions")
+
+  @@unique([id, tenantId])
+  @@index([tenantId, semesterId])
+  @@map("syllabi")
+}
+
+enum SyllabusVersionStatus {
+  DRAFT
+  /// Indexing the new version; the previous one stays live until it finishes.
+  PUBLISHING
+  PUBLISHED
+  SUPERSEDED
+}
+
+enum JobState {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+}
+
+/// One version of a syllabus. Published versions are never changed; an edit is a new version.
+model SyllabusVersion {
+  id                  String                  @id @default(cuid())
+  tenantId            String
+  tenant              Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  syllabusId          String
+  syllabus            Syllabus                @relation("SyllabusVersions", fields: [syllabusId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  versionNo           Int
+  status              SyllabusVersionStatus   @default(DRAFT)
+  sourceFileId        String?
+  sourceFile          FileObject?             @relation(fields: [sourceFileId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  copiedFromVersionId String?
+  /// The day this version takes effect; class sessions taught from then on link to it.
+  effectiveFrom       DateTime?               @db.Date
+  extraction          JobState                @default(DONE)
+  extractionError     String?
+  /// The PDF had little text, so the AI read it as images (costs more).
+  usedOcr             Boolean                 @default(false)
+  suggestedName       String?
+  suggestedCode       String?
+  credits             Int?
+  /// Reference books: [{ title, author, sourcePage }].
+  references          Json                    @default("[]")
+  createdById         String?
+  publishedById       String?
+  publishedAt         DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  liveFor             Syllabus?               @relation("CurrentVersion")
+  topics              SyllabusTopic[]
+  pages               SyllabusPage[]
+  changeRequests      SyllabusChangeRequest[]
+
+  @@unique([syllabusId, versionNo])
+  @@unique([id, tenantId])
+  @@index([tenantId, status])
+  @@map("syllabus_versions")
+}
+
+/// Extracted text of one PDF page, so the reviewer can see where an item came from.
+model SyllabusPage {
+  id        String          @id @default(cuid())
+  tenantId  String
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  versionId String
+  version   SyllabusVersion @relation(fields: [versionId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  pageNo    Int
+  text      String
+
+  @@unique([versionId, pageNo])
+  @@map("syllabus_pages")
+}
+
+enum TopicKind {
+  UNIT
+  TOPIC
+  SUBTOPIC
+}
+
+/// A node of the topic tree of a version. stableKey survives new versions of the same subject,
+/// so class entries and later exam scope keep pointing at the same topic.
+model SyllabusTopic {
+  id          String          @id @default(cuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  versionId   String
+  version     SyllabusVersion @relation(fields: [versionId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  parentId    String?
+  parent      SyllabusTopic?  @relation("TopicTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    SyllabusTopic[] @relation("TopicTree")
+  stableKey   String
+  kind        TopicKind
+  title       String
+  description String?
+  /// Teaching hours given by the syllabus, if any.
+  hours       Int?
+  orderIndex  Int
+  sourcePage  Int?
+  /// 0 to 100; low values are highlighted for review.
+  confidence  Int             @default(100)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([versionId, stableKey])
+  @@index([tenantId, versionId])
+  @@map("syllabus_topics")
+}
+
+enum ChangeRequestStatus {
+  PROPOSED
+  ACCEPTED
+  PARTIAL
+  REJECTED
+}
+
+/// A plain-language request and the changes the AI proposed for it. Nothing changes until the
+/// admin accepts operations one by one.
+model SyllabusChangeRequest {
+  id          String              @id @default(cuid())
+  tenantId    String
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  versionId   String
+  version     SyllabusVersion     @relation(fields: [versionId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  requestText String
+  /// [{ id, op, fields, before, after, decision }]
+  proposedOps Json
+  /// The AI note when it could not map part of the request.
+  note        String?
+  status      ChangeRequestStatus @default(PROPOSED)
+  createdById String?
+  decidedById String?
+  decidedAt   DateTime?
+  createdAt   DateTime            @default(now())
+
+  @@index([tenantId, versionId])
+  @@map("syllabus_change_requests")
+}
+
+// ---------- Knowledge index ----------
+
+enum ChunkSource {
+  SYLLABUS_TOPIC
+  ENTRY_VERSION
+  NOTE
+}
+
+enum ChunkStatus {
+  LIVE
+  DELETED
+}
+
+/// Maps Postgres records to Qdrant points, so superseded vectors can always be found and removed.
+model IndexedChunk {
+  id               String      @id @default(cuid())
+  tenantId         String
+  tenant           Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sourceType       ChunkSource
+  sourceId         String
+  sourceVersionId  String
+  ownerId          String?
+  qdrantPointId    String      @unique
+  embeddingModel   String
+  embeddingVersion Int         @default(1)
+  status           ChunkStatus @default(LIVE)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([tenantId, sourceType, sourceVersionId, status])
+  @@map("indexed_chunks")
 }

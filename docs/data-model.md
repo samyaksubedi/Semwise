@@ -40,16 +40,18 @@ Children repeat their path (programId, batchId, semesterId, tenantId). Composite
 
 ## Files
 
-`FileObject`: tenantId, storageKey (`tenants/<tenantId>/<area>/<id>`), mime, size, kind (SYLLABUS_PDF, AUDIO, PHOTO), uploadedBy, status (PENDING, READY, DELETED), deleteAfter.
+`FileObject`: tenantId, storageKey (`tenants/<tenantId>/<area>/<id>`), mime, size, kind (SYLLABUS_PDF, AUDIO, PHOTO), the path it belongs to (programId, batchId, semesterId, subjectId, sectionId, classId) for download checks, uploadedBy, status (PENDING, READY, DELETED), deleteAfter.
+
+`SyllabusPage`: versionId, pageNo, text (the extracted text of each PDF page, shown as the source next to an item).
 
 ## Syllabus
 
-| Table                   | Key fields                                                                                                           |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `Syllabus`              | subjectId (unique), currentVersionId                                                                                 |
-| `SyllabusVersion`       | syllabusId, versionNo, status (DRAFT, PUBLISHED, SUPERSEDED), sourceFileId, effectiveFrom, publishedBy, publishedAt  |
-| `SyllabusTopic`         | versionId, parentId, stableKey, kind (UNIT, TOPIC, SUBTOPIC), title, description, orderIndex, sourcePage, confidence |
-| `SyllabusChangeRequest` | versionId, requestText, proposedOps (json), status (PROPOSED, ACCEPTED, REJECTED), decidedBy, decidedAt              |
+| Table                   | Key fields                                                                                                                                                                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Syllabus`              | programId, batchId, semesterId, subjectId? (empty while an imported PDF waits for the admin to confirm the suggested subject), currentVersionId (the live version)                                                                                                                                                       |
+| `SyllabusVersion`       | syllabusId, versionNo, status (DRAFT, PUBLISHING, PUBLISHED, SUPERSEDED), sourceFileId, copiedFromVersionId, effectiveFrom, extraction (QUEUED, RUNNING, DONE, FAILED), extractionError, usedOcr, suggestedName/Code, credits, references (json), publishedBy, publishedAt; at most one DRAFT or PUBLISHING per syllabus |
+| `SyllabusTopic`         | versionId, parentId, stableKey (kept for matching titles in a new version of the same subject; new keys for a copy to another batch), kind (UNIT, TOPIC, SUBTOPIC), title, description, hours, orderIndex, sourcePage, confidence (0-100; below 60 is highlighted)                                                       |
+| `SyllabusChangeRequest` | versionId, requestText, proposedOps (json: each op with before/after and its decision), note (what the AI could not map), status (PROPOSED, ACCEPTED, PARTIAL, REJECTED), decidedBy, decidedAt                                                                                                                           |
 
 ## Class content
 

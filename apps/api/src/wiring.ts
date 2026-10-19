@@ -1,7 +1,8 @@
 import { registerEnrollmentLoader, registerTeachingLoader } from "./modules/authz/index.js";
-import { classesService } from "./modules/classes/index.js";
+import { classesService, registerSyllabusGate } from "./modules/classes/index.js";
 import { enrollmentsService } from "./modules/enrollments/index.js";
 import { registerAcceptHandler } from "./modules/invitations/index.js";
+import { syllabusService } from "./modules/syllabus/index.js";
 
 let wired = false;
 
@@ -18,4 +19,5 @@ export function wireModules(): void {
   );
   registerTeachingLoader((tenantId, userId) => classesService.teaching(tenantId, userId));
   registerAcceptHandler("STUDENT", enrollmentsService.acceptStudent);
+  registerSyllabusGate((scope, subjectId) => syllabusService.hasPublished(scope, subjectId));
 }

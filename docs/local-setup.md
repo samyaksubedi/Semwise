@@ -81,6 +81,7 @@ Check: http://localhost:4000/v1/health/ready should report `database`, `redis` a
 - As the University Admin: `POST /v1/programs`, then `POST /v1/programs/:id/admins` to invite a Program Admin. As the Program Admin: `POST /v1/programs/:id/batches`, `POST /v1/batches/:id/semesters`, `POST /v1/semesters/:id/sections` and `/subjects`. `GET /v1/batches/:id/tree` shows the result.
 - Students: `POST /v1/semesters/:id/students` (one) or `POST /v1/semesters/:id/students/import/preview` then `/import` with `{ "csv": "email,roll_no,name,section
 ..." }`. Watch `GET /v1/semesters/:id/students/invite-progress` while the worker sends (20 a minute, 400 a day by default). CR: `POST /v1/sections/:id/cr` with `{ "studentId" }`. Teachers: `POST /v1/teachers/invite` with `{ "email", "programId" }`.
+- Syllabus: `POST /v1/files/uploads` with `{ "kind": "SYLLABUS_PDF", "mime": "application/pdf", "size", "subjectId" }`, PUT the file to `uploadUrl` with the same `Content-Type`, then `POST /v1/files/:id/complete`. Start the draft with `POST /v1/subjects/:id/syllabus/drafts` and `{ "fileId" }`; the worker reads it (needs `OPENAI_API_KEY`; without it the API answers 503). Review at `GET /v1/syllabus/versions/:id`, publish with `POST /v1/syllabus/versions/:id/publish`. Qdrant's dashboard (http://localhost:6333/dashboard) shows the indexed chunks.
 - Classes: `POST /v1/classes` with `{ "subjectId", "sectionId", "teacherUserIds" }` once the subject's syllabus is published (feature 5); `GET /v1/classes/mine` for teachers, CRs and students.
 
 ## 9. Checks before every commit

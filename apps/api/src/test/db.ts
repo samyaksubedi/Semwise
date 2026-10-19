@@ -1,4 +1,6 @@
 import pg from "pg";
+import { env } from "../config/env.js";
+import { getQdrant } from "../lib/qdrant.js";
 import { getRedis } from "../lib/redis.js";
 import { testMigrationDatabaseUrl } from "./database-url.js";
 
@@ -23,6 +25,13 @@ export async function resetDatabase(): Promise<void> {
   const tables = rows.map((row) => `"public"."${row.tablename}"`).join(", ");
   if (tables) await pool.query(`TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE`);
   await getRedis().flushdb();
+  // Every point of the test collection (a field nobody sets is "empty" on all of them).
+  await getQdrant()
+    .delete(env.QDRANT_COLLECTION, {
+      wait: true,
+      filter: { must: [{ is_empty: { key: "__never_set__" } }] },
+    })
+    .catch(() => undefined);
 }
 
 /** Raw SQL as the owner, for tests that inspect what the app role cannot see. */

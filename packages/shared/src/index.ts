@@ -9,3 +9,5 @@ export * from "./schemas/structure.js";
 export * from "./schemas/tenants.js";
 export * from "./schemas/students.js";
 export * from "./schemas/classes.js";
+export * from "./schemas/files.js";
+export * from "./schemas/syllabus.js";

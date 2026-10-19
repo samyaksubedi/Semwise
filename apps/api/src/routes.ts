@@ -5,6 +5,7 @@ import { auditPlatformRouter, auditRouter } from "./modules/audit/index.js";
 import { authRouter, loadSession, requireAuth } from "./modules/auth/index.js";
 import { classesRouter, semesterClassesRouter } from "./modules/classes/index.js";
 import { requireSuperAdmin, resolveTenant } from "./modules/authz/index.js";
+import { filesRouter } from "./modules/files/index.js";
 import { healthRouter } from "./modules/health/index.js";
 import {
   sectionCrRouter,
@@ -19,6 +20,11 @@ import {
   semestersRouter,
   subjectsRouter,
 } from "./modules/structure/index.js";
+import {
+  semesterSyllabusRouter,
+  subjectSyllabusRouter,
+  syllabusRouter,
+} from "./modules/syllabus/index.js";
 import { collegeRouter, tenantsPlatformRouter } from "./modules/tenants/index.js";
 
 /** Tenant routes: the active college always comes from the session, never from the client. */
@@ -76,10 +82,14 @@ export function createV1Router(): Router {
     ["/semesters", semestersRouter],
     ["/semesters", semesterStudentsRouter],
     ["/semesters", semesterClassesRouter],
+    ["/semesters", semesterSyllabusRouter],
     ["/classes", classesRouter],
     ["/sections", sectionsRouter],
     ["/sections", sectionCrRouter],
     ["/subjects", subjectsRouter],
+    ["/subjects", subjectSyllabusRouter],
+    ["/syllabus", syllabusRouter],
+    ["/files", filesRouter],
     ["/students", studentsRouter],
     ["/teachers", teachersRouter],
     ["/audit", auditRouter],

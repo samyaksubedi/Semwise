@@ -169,6 +169,7 @@ Rate limits count in Redis (shared by every API instance). AI routes also pass t
 - Every call writes a ledger row (tenant, user, feature, model, tokens, cost, price snapshot). Quota checks run before the call.
 - All retrieved text and user input are passed as data in clearly delimited sections, never as instructions.
 - Prices change and sources disagree, so the price table used by the ledger is stored as data and updated by hand from OpenAI's official pricing page.
+- As built: `ai.provider.ts` is an `AiProvider` interface (structured JSON through the Responses API with strict schemas, embeddings, transcription); tests install a fake. Output schemas are Zod, sent as strict JSON schema and validated again on the answer. Scanned syllabus PDFs (little text per page) are sent to the model as a PDF file instead of running local OCR, so no image tooling is needed on the server.
 
 ### Default models and prices (October 2026)
 
@@ -225,7 +226,7 @@ Long or failure-prone work runs as retryable jobs: PDF extraction, OCR, transcri
 - Allow-list of types (PDF, common audio, JPEG and PNG), size limits per type, and a magic-byte check when the upload completes. Anything that fails is deleted.
 - Downloads also use short-lived signed URLs, issued only after an authz check.
 - Raw audio is deleted after transcription; other files follow the retention policy. Bucket CORS allows only the web origin.
-- The S3 client talks to R2's S3-compatible endpoint, so another S3 provider can replace it later.
+- The S3 client talks to R2's S3-compatible endpoint, so another S3 provider can replace it later. The SDK's default request checksums are switched off for signed URLs (R2 and SeaweedFS reject them).
 
 ## Email (Nodemailer + Gmail for now)
 
@@ -337,7 +338,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 - [x] 2. Academic structure and tenant provisioning
 - [x] 3. Invitations and enrollment
 - [x] 4. Classes
-- [ ] 5. Syllabus ingestion
+- [x] 5. Syllabus ingestion
 - [ ] 6. Class entries and approvals
 - [ ] 7. CR voice and photo input
 - [ ] 8. Student Q&A

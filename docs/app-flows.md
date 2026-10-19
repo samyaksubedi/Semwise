@@ -79,6 +79,8 @@ As built: the published-syllabus rule is checked through a gate the syllabus mod
 6. Later changes repeat the flow and create version 2; affected class-session topic mappings are flagged.
 7. For a new batch, the admin can **copy from the previous batch** and review.
 
+As built: the upload is a signed PUT straight to storage, then `complete` checks size and magic bytes. A PDF can be uploaded for a semester before its subject exists; after extraction the admin confirms (or corrects) the suggested name and code, which creates the subject. Extraction and publishing run as jobs and their state is shown on the version. Publishing keeps the previous version live until the new one is indexed. Plain-language requests are answered with proposed operations; each is accepted or rejected, and one that a previous accepted step made impossible is recorded as rejected. A semester's syllabus dashboard shows NONE, PROCESSING, DRAFT or PUBLISHED per subject, plus uploads waiting for their subject.
+
 ## 6. Class entries and approvals (CR and teacher)
 
 1. After a lesson, the CR opens the section's classes, picks a subject, sets the `taught_on` date (default today) and types the topics and subtopics.
