@@ -42,9 +42,15 @@ Confirmed working: all six configured model names, strict JSON output, PDF file 
 7. A real `OPENAI_API_KEY` is in `apps/api/.env` (git-ignored; never print, log or commit it).
 8. (New) Chat answers are produced inside the request, not as a job; streaming is a later improvement.
 
-## Next
+## Web phase A (in progress)
 
-**Web phase A** per [ui-ux.md](ui-ux.md), mobile first, in flow order: login, admin structure, invitations, syllabus review, CR entry (with voice and photo), approval queue, student chat and catch-up. Read `node_modules/next/dist/docs/` first (Next.js 16.4). Check each screen at 360, 768 and 1280 px, light and dark.
+Done and committed: `feat(web): shell, ...` (tokens, UI kit in `components/ui`, API client, session, role areas, sign-in, invites, password reset, profile; checked at 360/768/1280 in light and dark) and `feat(web): admin overview, structure, students, classes and settings` (**not yet screenshot-checked**: the dev servers were stopped for low memory).
+
+Next, in order: (c) admin syllabus review, (d) CR entry with voice and photo plus teacher approvals and "My classes", (e) student chat and catch-up. Then screenshot-check (b) to (e), and tick the web checklist in architecture.md.
+
+How to check screens: `pnpm --filter @semwise/api seed:demo`, run `pnpm dev`, then `node apps/web/scripts/screens.mjs <dir> program:/admin,/admin/structure,/admin/students,/admin/classes,/admin/settings` (see local-setup.md). It flags sideways scroll at 360 px.
+
+Web conventions: client components fetch with TanStack Query (`features/admin/queries.ts` has the keys); forms in sheets use `FormSheet`; API field errors come from `ApiError.field(path)`; all copy goes in `src/lib/strings.ts`; show the API's own message for 409s (it is already specific).
 
 ## Conventions and gotchas
 
