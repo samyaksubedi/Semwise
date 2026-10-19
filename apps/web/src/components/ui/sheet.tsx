@@ -26,6 +26,10 @@ export function Sheet({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // Set when our own cleanup closes the dialog, so the browser's "close" event that follows is
+  // not mistaken for the person closing it. React strict mode (dev) mounts, cleans up and mounts
+  // again; without this a sheet that mounts already open closes itself the moment it appears.
+  const closedByCleanup = useRef(false);
   // Unique per sheet: a confirmation can open on top of another sheet.
   const titleId = useId();
   useEffect(() => {
@@ -36,7 +40,10 @@ export function Sheet({
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (!dialog.open) dialog.showModal();
     return () => {
-      if (dialog.open) dialog.close();
+      if (dialog.open) {
+        closedByCleanup.current = true;
+        dialog.close();
+      }
       if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
   }, [open]);
@@ -46,7 +53,12 @@ export function Sheet({
       ref={ref}
       // React passes a nested sheet's close and cancel events up the tree: only react to our own.
       onClose={(e) => {
-        if (e.target === ref.current) onClose();
+        if (e.target !== ref.current) return;
+        if (closedByCleanup.current) {
+          closedByCleanup.current = false;
+          return;
+        }
+        onClose();
       }}
       onCancel={(e) => {
         if (e.target !== ref.current) return;
