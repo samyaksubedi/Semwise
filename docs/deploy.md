@@ -28,7 +28,7 @@ Both images were built and the whole compose stack was started locally on 2026-1
 3. Domains: `web` → `https://app.example.com` on port 3000; `api` → `https://api.example.com` on port 4000. Coolify's proxy terminates TLS. Give no domain to postgres, redis, qdrant or worker; the compose file publishes no ports for them.
 4. Deploy. The API container runs `prisma migrate deploy` (as the owner role) and then starts; the worker waits for the API's health check, so migrations always run first. The web image is built with `NEXT_PUBLIC_API_URL=${API_ORIGIN}`: **rebuild web whenever the API domain changes**.
 5. If the init script mount does not work on your Coolify version (the role is missing and the API logs a database login error), create the role once by hand with the SQL in section 5.
-6. Create the Super Admin (the password is read silently, so it stays out of shell history and the process list):
+6. Create the Super Admin. Interactively (email, name, then the password hidden and typed twice): `docker exec -it <api container> node dist/scripts/create-super-admin.js`. Or without prompts (the password is read silently, so it stays out of shell history and the process list):
 
    ```sh
    read -rs SUPER_ADMIN_PASSWORD && export SUPER_ADMIN_PASSWORD

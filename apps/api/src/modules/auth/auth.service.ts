@@ -252,6 +252,12 @@ export const authService = {
     await authRepository.revokeAllSessions(user.id, now);
   },
 
+  /** Logs out every session and voids open reset links, after an operator script sets a password. */
+  async revokeAccess(userId: string, now = new Date()): Promise<void> {
+    await authRepository.revokeAllSessions(userId, now);
+    await authRepository.expireOpenResets(userId, now);
+  },
+
   cleanupSessions(now = new Date()): Promise<number> {
     return authRepository.deleteDeadSessions(now);
   },

@@ -345,7 +345,7 @@ Features 0 to 9 with their web screens, and the hardening pass, all committed on
 
 ### Verified, and how
 
-- `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm build` pass; `pnpm test`: 219 API, 19 web and 4 shared tests (real Postgres, Redis and Qdrant in Docker; OpenAI, R2 and email mocked).
+- `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm build` pass; `pnpm test`: 229 API, 19 web and 4 shared tests (real Postgres, Redis and Qdrant in Docker; OpenAI, R2 and email mocked).
 - `pnpm e2e`: 7 Playwright tests against the compiled API and worker and `next start`, the reseeded demo college and a fake OpenAI server; passed three runs in a row. The flows covered are listed in [local-setup.md](local-setup.md).
 - Real OpenAI: `smoke:ai` (about $0.02) confirmed all six configured model names, strict JSON output, PDF file input for scans, image input, embeddings and a price row for every model. One real chat question was asked through the API and its answer (labels, [S1] chips, general explanation) renders correctly.
 - Screens: screenshots against production builds with the demo college, 19 pages for 5 roles at 360, 768 and 1280 px in light and dark, plus the Super Admin page; no sideways scroll at 360 px and no page errors. A sample of the images was inspected, not every one.

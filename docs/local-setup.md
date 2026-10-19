@@ -52,15 +52,15 @@ pnpm db:deploy
 
 ## 6. Create the Super Admin
 
-The platform operator account. The password comes from an environment variable so it stays out of shell history:
+The platform operator account. Run this and answer the prompts:
 
 ```powershell
-$env:SUPER_ADMIN_PASSWORD = "a long local password"
-pnpm super-admin:create -- --email admin@semwise.local --name "Platform Admin"
-Remove-Item Env:SUPER_ADMIN_PASSWORD
+pnpm super-admin:create
 ```
 
-Running it again for the same email resets that account's password and keeps it Super Admin.
+It asks for the email, the name, and the password (hidden, typed twice; at least 12 characters, the app's own rule). Before saving, it says whether it will **create** a new account or **reset** an existing one. Running it again for the same email resets that account's password, keeps it Super Admin and logs out its sessions, after you confirm with `y`.
+
+For scripts and CI it runs without prompts when `--email`, `--name` and the `SUPER_ADMIN_PASSWORD` environment variable are all given (the password is never a flag, so it stays out of shell history): `pnpm super-admin:create -- --email admin@semwise.local --name "Platform Admin"`. Without a terminal and with something missing, it fails with usage instead of waiting.
 
 ## 7. Run
 
