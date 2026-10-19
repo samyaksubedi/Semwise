@@ -1,6 +1,6 @@
 # Semwise Project Context
 
-> **Purpose of this document:** The product brief for Semwise: vision, decisions made, academic hierarchy, roles, content flow, AI behaviour, exams, and the feature build order. For the tech stack, repo layout and code conventions, see [architecture.md](architecture.md). Items under **Open decisions** (section 17) are not yet settled. Last updated: 2026-10-19.
+> **Purpose of this document:** The product brief for Semwise: vision, decisions made, academic hierarchy, roles, content flow, AI behaviour, exams, and the principles to preserve. For the tech stack, repo layout, build list and status, see [architecture.md](architecture.md). Items under **Still open** (section 17) are not yet settled. Last updated: 2026-10-19.
 
 ## 1. Project vision
 
@@ -95,7 +95,7 @@ Requirements:
 The Program Admin uploads **one syllabus PDF per subject per batch**. The pipeline is draft, then review, then publish:
 
 1. Admin picks the batch and semester and uploads the PDF. The AI suggests the subject name and code from it; the admin confirms.
-2. Text is extracted (OCR for scanned PDFs, which costs more).
+2. Text is extracted; a scanned PDF is read by the model itself, which costs more.
 3. The AI produces a **structured draft**: units, topics, credits, reference books. Each item links to its source page; low-confidence items are highlighted.
 4. The admin reviews an editable tree. Corrections can be made by direct editing **or by typing a plain-language request** (for example "Unit 3 is missing Laplace transforms").
 5. Natural-language requests produce a **list of proposed changes (add, rename, move, delete)** shown as a before/after diff. The admin accepts or rejects them. The AI never silently rewrites the tree. Requests and decisions are kept as an audit trail.
@@ -226,7 +226,7 @@ Shared (generated once): study cards, questions, rubrics. Private per student: a
 ## 15. Security, privacy and legal notes
 
 - Tenant, section and ownership checks on every request and every retrieval.
-- Treat all retrieved text (PDFs, OCR, transcripts, CR input, student answers) strictly as data, never as instructions.
+- Treat all retrieved text (PDFs, photo text, transcripts, CR input, student answers) strictly as data, never as instructions.
 - Audit log for admin actions, approvals, takedowns, syllabus and scope changes.
 - Uploaders accept terms covering copyrighted material.
 - Review OpenAI's data retention and data-processing terms and Nepal's privacy law before launch. Define a retention and deletion policy.
@@ -244,7 +244,7 @@ Combined classes and shared labs; student voice, photo or file uploads; student-
 - File storage: Cloudflare R2.
 - Email: Nodemailer over a free Gmail account for now, behind a swappable interface, with throttling and abuse protections.
 - AI: OpenAI. Default models: GPT-5.6 Luna (router and classification), GPT-5.4 Mini (student answers), GPT-5.6 Terra (hard questions, grading, extraction, study material, vision), text-embedding-3-small (embeddings), gpt-transcribe (dictation). All are configuration and can change. Prices and unit costs are in architecture.md.
-- Build approach: backend first, one feature at a time; web screens start after backend features 0 to 9.
+- Build approach: backend first, one feature at a time; web screens started after backend features 0 to 9 (V1).
 
 ### Decided design details
 
@@ -263,8 +263,6 @@ Combined classes and shared labs; student voice, photo or file uploads; student-
 - Confirm prices against OpenAI's official pricing page; benchmark transcription models on real CR clips. (Model names, PDF input and strict JSON output were confirmed with the real API on 2026-10-19 by `pnpm --filter @semwise/api smoke:ai`.)
 - Legal review of provider terms and of the retention defaults.
 - Final prices and plan tiers.
-- The exact database schema (written when feature 1 starts, from data-model.md).
-- Whether Postgres row-level security works cleanly with Prisma 7; if not, rely on explicit scoping and the isolation tests (see data-model.md).
 
 ## 18. Principles to preserve
 
@@ -283,29 +281,6 @@ Combined classes and shared labs; student voice, photo or file uploads; student-
 
 ---
 
-## 19. Feature build order
+## 19. Build order and status
 
-Each feature is built fully, with permission tests, before the next. Progress is tracked in [architecture.md](architecture.md).
-
-0. **Scaffold:** monorepo, shared package, lint, tests, CI, local Postgres and Qdrant.
-1. **Foundations:** authentication, tenants, single User, scoped memberships, authorization layer, audit log, tenant-isolation test suite, minimal usage ledger.
-2. **Tenant provisioning and academic structure:** Super Admin creates tenants and University Admin; programs, batches, semesters, subjects, sections.
-3. **Invitations and enrollment:** email invites, verification, semester-specific section assignment with history, CR and teacher assignment.
-4. **Classes:** subject x section x teacher.
-5. **Syllabus ingestion:** upload per subject per batch, extraction, draft review with natural-language changes, publish, versions, copy from previous batch, chunking and embedding, job queue and file storage.
-6. **Class entries (text):** CR and teacher entries, AI organization, topic mapping, `taught_on`, versions, approval workflow, reminders.
-7. **CR voice and photo input** with review before submit.
-8. **Student Q&A:** router, retrieval with access re-check, syllabus classification, labeled answers, source references, private chat history.
-9. **Catch-up and date-based questions.**
-10. **Student notes** and "Check my notes".
-11. **Exams and exam scope**, plus "what comes in the exam?".
-12. **Study plan.**
-13. **Study cards.**
-14. **Study room:** question generation, rubric grading, mastery.
-15. **Usage dashboards, quotas and plan limits.**
-16. **Nepali beta,** only if the language test passes.
-17. **Deploy** (see [architecture.md](architecture.md)).
-
----
-
-**Current status:** Product direction, roles, content flow, syllabus pipeline, content lifecycle, AI behaviour, notes, exams, exam preparation and the infrastructure choices are decided as written above. The step-by-step user flows are in [app-flows.md](app-flows.md), the tables are in [data-model.md](data-model.md), and the permission matrix is in [permissions.md](permissions.md). Next step: scaffold the repo (feature 0), backend first.
+V1 (features 0 to 9: foundations, structure, invitations, classes, syllabus, class entries, voice and photo, Q&A, catch-up) is built. The build list and the current status are in [architecture.md](architecture.md); the step-by-step flows are in [app-flows.md](app-flows.md), the tables in [data-model.md](data-model.md) and the permission matrix in [permissions.md](permissions.md).

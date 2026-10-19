@@ -4,14 +4,16 @@ Semwise is a multi-tenant SaaS for colleges: an academic "memory" built from off
 
 ## Read first
 
-| Doc                               | What it holds                                                                                  |
-| --------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `docs/Semwise_Project_Context.md` | Product rules, roles, decisions, build order                                                   |
-| `docs/architecture.md`            | Stack, repo layout, module pattern, AI layer, jobs, email, storage, deployment, build progress |
-| `docs/data-model.md`              | Planned tables and constraints                                                                 |
-| `docs/permissions.md`             | Role x action matrix (the source for `authz` and its tests)                                    |
-| `docs/app-flows.md`               | Step-by-step flow of every feature                                                             |
-| `docs/ui-ux.md`                   | Web UI/UX rules (mobile first)                                                                 |
+| Doc                               | What it holds                                                                                      |
+| --------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `docs/Semwise_Project_Context.md` | Product rules, roles, decisions, principles                                                        |
+| `docs/architecture.md`            | Stack, repo layout, module pattern, AI layer, jobs, email, storage, deployment, build list, Status |
+| `docs/data-model.md`              | Tables and constraints                                                                             |
+| `docs/permissions.md`             | Role x action matrix (the source for `authz` and its tests)                                        |
+| `docs/app-flows.md`               | Step-by-step flow of every feature                                                                 |
+| `docs/ui-ux.md`                   | Web UI/UX rules (mobile first)                                                                     |
+| `docs/local-setup.md`             | Running and testing locally                                                                        |
+| `docs/deploy.md`                  | Production deploy, environment, backups                                                            |
 
 If code and docs disagree, stop and ask; do not silently pick one. When a decision changes, update the docs in the same commit.
 
@@ -21,7 +23,7 @@ If code and docs disagree, stop and ask; do not silently pick one. When a decisi
 2. Before coding a feature: read its flow in `app-flows.md`, its tables in `data-model.md`, and its rows in `permissions.md`. Create a short task list.
 3. Definition of done for a feature: `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass; new tests cover the happy path, validation errors, permission denials, and **cross-tenant, cross-section and cross-student access**; the build checklist in `docs/architecture.md` is ticked; `docs/local-setup.md` is current.
 4. Commit after each feature (and at sensible checkpoints inside big features). Use conventional messages such as `feat(syllabus): ...`. Never commit secrets, `.env` files or generated build output.
-5. If context is running low, finish the current commit and write a short `docs/HANDOFF.md` (done, next, open questions) so a fresh session can continue.
+5. In a long session, or if context is running low, finish the current commit and record progress (done, next, open questions) in the Status section of `docs/architecture.md` so a fresh session can continue.
 
 ## Rules that must never be broken
 

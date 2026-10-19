@@ -21,7 +21,7 @@ The end-to-end flow of every feature, from the user's side and from the system's
 4. It writes a **usage ledger** row (tenant, user, feature, model, tokens, cost, price snapshot).
 5. Output is validated against a schema before use.
 
-**Every background job** (PDF extraction, OCR, transcription, embedding, summaries, emails, reminders)
+**Every background job** (PDF extraction, transcription, photo reading, embedding, summaries, emails, reminders)
 
 1. The service stores the source and enqueues a job in Redis (BullMQ) with an idempotency key.
 2. The worker process picks it up; progress is stored as queued, running, failed or done.
@@ -72,7 +72,7 @@ As built: the published-syllabus rule is checked through a gate the syllabus mod
 ## 5. Syllabus ingestion
 
 1. Program Admin chooses batch and semester and uploads one syllabus PDF for a subject (direct to R2 via a signed URL; type and size checked).
-2. A job extracts the text (OCR when scanned) and asks the AI for a structured draft: subject name and code, units, topics, credits, reference books, each with a source page.
+2. A job extracts the text (a scan is read by the model) and asks the AI for a structured draft: subject name and code, units, topics, credits, reference books, each with a source page.
 3. Admin reviews the topic tree. Low-confidence items are highlighted; clicking one shows the source page.
 4. To fix something, the admin edits directly or types a request ("Unit 3 is missing Laplace transforms"). The AI returns a list of proposed changes shown as a before/after diff; the admin accepts or rejects each.
 5. Admin publishes. A new **syllabus version** is created; topics are chunked, embedded and indexed in Qdrant.

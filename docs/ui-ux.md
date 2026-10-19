@@ -41,7 +41,7 @@ Defined once in `styles/tokens.css` as CSS variables (same approach as the blog)
 
 ## Key screens
 
-**Chat (student).** Full-height conversation. Message input fixed at the bottom with the on-screen keyboard handled correctly. A **subject chip** above the input shows "All subjects" and can be tapped to pin one. Suggestion chips: "What was taught today?", "Explain the last topic", "What's in the next exam?". Answers stream in. Under each answer, **source chips** (date or syllabus unit) open a bottom sheet with the original entry. A small **label** marks the kind of content: _From syllabus_, _Reported in class_, _General explanation_, _Beta translation_. "Unrelated question" and "no answer found" have their own calm message styles. A quota meter appears only when close to the limit.
+**Chat (student).** Full-height conversation. Message input fixed at the bottom with the on-screen keyboard handled correctly. A **subject chip** above the input shows "All subjects" and can be tapped to pin one. Suggestion chips: "What was taught today?", "Explain the last topic", "What's in the next exam?". Answers arrive whole (streaming is a later improvement). Under each answer, **source chips** (date or syllabus unit) open a bottom sheet with the original entry. A small **label** marks the kind of content: _From syllabus_, _Reported in class_, _General explanation_, _Beta translation_. "Unrelated question" and "no answer found" have their own calm message styles. A quota meter appears only when close to the limit.
 
 **Catch-up (student).** A horizontal date strip (swipeable) with a range picker; below, one card per subject with the stored summary and the topics, plus "Ask a follow-up" that opens chat with that context.
 
@@ -104,6 +104,7 @@ These are for inspiration on patterns, not to copy designs.
 - **Mobile navigation** (bottom tab bar with few labelled destinations, reachable by thumb): [Bottom tab bar best practices](https://bootcamp.uxdesign.cc/bottom-tab-bar-design-best-practices-navigating-user-experience-with-finesse-4dc63420f35d), [Uxcel mobile design course](https://app.uxcel.com/courses/mobile-design/mobile-navigation--input-components-693).
 - **Product feel:** the clarity of class-card layouts in classroom tools, the quiet writing surface of Notion, the dense but calm admin tables of Linear, and the answer-plus-sources layout of Perplexity-style assistants.
 - Before building each screen, the builder should look at two or three live examples of that pattern, note what to borrow in one or two lines, and then design the screen to our tokens.
+- Borrowed in V1: per-change accept or reject with before/after and accept all (AI UX Playground, Revise); approvals with fixed approve and reject buttons, no confirm on approve, an inline one-line reject reason, and bulk behind an explicit Select mode (FinalApproval); record then edit the transcript (Apple Notes); source chips beside the claim with meaningful labels and a plain disclaimer near the input (NN/g on explainable AI); 2 to 4 suggestion chips that fill the box (AI UX Playground); a swipeable recent-days strip (Material date pickers).
 
 ## Checking the work
 

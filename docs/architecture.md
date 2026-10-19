@@ -1,6 +1,6 @@
 # Architecture
 
-Product decisions live in [Semwise_Project_Context.md](Semwise_Project_Context.md). This document covers the tech stack, the repo layout and the code conventions. It follows the structure of the Blogs repo (pnpm monorepo, `apps/api`, `apps/web`, `packages/shared`), with multi-tenancy, a vector index and an AI layer added. Nothing here is built yet; it is the plan the scaffold will follow.
+Product decisions live in [Semwise_Project_Context.md](Semwise_Project_Context.md). This document covers the tech stack, the repo layout and the code conventions. It follows the structure of the Blogs repo (pnpm monorepo, `apps/api`, `apps/web`, `packages/shared`), with multi-tenancy, a vector index and an AI layer added. V1 (features 0 to 9) is built as described here; what is built, verified and still open is under [Status](#status) at the end.
 
 ## Stack
 
@@ -71,7 +71,7 @@ semwise/
 ├── packages/
 │   └── shared/src/               api/ (envelope, errors), schemas/, content/, utils/
 ├── CLAUDE.md                     instructions for Claude Code
-├── docs/                         Semwise_Project_Context.md, architecture.md, data-model.md, permissions.md, app-flows.md, ui-ux.md, build-prompt.md, local-setup.md
+├── docs/                         Semwise_Project_Context.md, architecture.md, data-model.md, permissions.md, app-flows.md, ui-ux.md, local-setup.md, deploy.md
 ├── infra/                        docker-compose.dev.yml, postgres-init.sql, docker-compose.prod.yml, postgres-init-prod.sh
 ├── scripts/                      dev.mjs (builds shared, starts API, waits, starts web), db-backup.mjs
 ├── .github/workflows/ci.yml
@@ -108,7 +108,7 @@ Rules (the blog's, plus the multi-tenant ones):
 8. **Only repositories talk to Qdrant**, and every vector query carries the tenant filter. Results are re-checked against Postgres before use.
 9. **All AI calls go through the `ai` module** so that every call is metered in the usage ledger and checked against quotas.
 
-## API modules (planned)
+## API modules
 
 | Module                                                         | What it does                                                                                                         | Feature #  |
 | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------- |
@@ -210,7 +210,7 @@ Prices are per 1M tokens unless stated, taken from third-party price trackers da
 
 ## Background jobs (BullMQ on Redis)
 
-Long or failure-prone work runs as retryable jobs: PDF extraction, OCR, transcription, embedding, summaries, study-card generation, emails, reminders and escalations.
+Long or failure-prone work runs as retryable jobs: PDF extraction (scans included), transcription, photo reading, embedding, summaries, study-card generation, emails, reminders and escalations.
 
 - The API only enqueues jobs. A separate **worker** process (`src/worker.ts`, same image, different start command) runs them, so slow AI work never blocks web requests.
 - One queue per job family, with its own concurrency and rate limit (OpenAI calls, and email sending, are rate-limited).
@@ -296,7 +296,7 @@ Features whose keys are unset answer 503 instead of crashing, as the blog does. 
 
 - Vitest with Supertest, a real Postgres database (`semwise_test`) wiped each run, files running one after another, as in the blog.
 - A dedicated **tenant-isolation test kit**: for each module, tests prove that another tenant, another section, another student, and an admin cannot reach private or foreign data, including through search and AI retrieval.
-- AI calls and Qdrant are mocked in unit tests; a small set of integration tests runs against a real Qdrant in CI.
+- OpenAI, R2 and email are mocked (`test/fakes.ts`); Postgres, Redis and Qdrant are real, locally in Docker and in CI. Jobs run in-process in tests.
 - Browser tests (Playwright, `apps/web/e2e`, `pnpm e2e`): a lean set of flows against production builds, the seeded demo college and a fake OpenAI server; one worker, Chromium only. See local-setup.md.
 
 ## Local development
@@ -304,20 +304,20 @@ Features whose keys are unset answer 503 instead of crashing, as the blog does. 
 - `pnpm db:up` starts Postgres, Qdrant, Redis, Mailpit (catches email) and SeaweedFS (S3-compatible stand-in for R2; MinIO no longer publishes public images) from `infra/docker-compose.dev.yml`.
 - `pnpm dev` runs `scripts/dev.mjs`: builds shared, starts the API and the worker, waits for health, then starts the web app (the order matters on Windows).
 - Everyday commands match the blog: `pnpm lint`, `pnpm format`, `pnpm typecheck`, `pnpm test`, `pnpm build`, plus `db:migrate`, `db:deploy`, `db:studio` and a `super-admin:create` script.
-- `docs/local-setup.md` will be a step-by-step checklist like the blog's, written during the scaffold.
+- The step-by-step checklist is [local-setup.md](local-setup.md).
 
 ## Deployment
 
 Everything runs on one VPS, managed by Coolify:
 
-| Service  | Notes                                                                                         |
-| -------- | --------------------------------------------------------------------------------------------- |
-| web      | Next.js container                                                                             |
-| api      | Express container; on start it runs `prisma migrate deploy`, then the server (as in the blog) |
-| worker   | Same image as the API, started with the worker command                                        |
-| postgres | Coolify database service, scheduled backups to R2                                             |
-| qdrant   | Coolify service with a persistent volume; periodic snapshots                                  |
-| redis    | Coolify service with AOF persistence, `noeviction`, a password, internal network only         |
+| Service  | Notes                                                                                          |
+| -------- | ---------------------------------------------------------------------------------------------- |
+| web      | Next.js container                                                                              |
+| api      | Express container; on start it runs `prisma migrate deploy`, then the server (as in the blog)  |
+| worker   | Same image as the API, started with the worker command                                         |
+| postgres | Service in the compose stack; daily `scripts/db-backup.mjs` dumps copied off the VPS           |
+| qdrant   | Service in the compose stack with a persistent volume and an API key; periodic snapshots       |
+| redis    | Service in the compose stack: AOF persistence, `noeviction`, a password, internal network only |
 
 - Put the web app and the API on subdomains of one domain (for example `app.` and `api.`), so session cookies and origin checks are simple.
 - Only the web and API services are public; Postgres, Qdrant and Redis are reachable only on the internal Docker network.
@@ -325,40 +325,81 @@ Everything runs on one VPS, managed by Coolify:
 - Plan at least 4 GB RAM for all services together; Next.js builds are heavy, so build images in CI if the VPS struggles.
 - Details: [deploy.md](deploy.md) (Dockerfiles, `infra/docker-compose.prod.yml`, environment checklist, backups and restore).
 
-## Build approach
+## Build list
 
-Backend first, one feature at a time. Each backend feature is finished when its API, worker jobs, validation schemas, audit entries and tests (including the isolation tests) are done, and it can be exercised through the API with test requests.
+One feature at a time, backend first. A feature is finished when its API, worker jobs, validation schemas, migration, audit entries and tests (including the isolation tests) are done and it can be exercised through the API; then its web screens follow. V1 is features 0 to 9: they form the core loop, ending with a student asking about what was taught, so real CRs and teachers can test it before later features pile on.
 
-1. **Backend phase A: features 0 to 9** (scaffold, foundations, structure, invitations, classes, syllabus, class entries and approvals, voice and photo, student Q&A, catch-up). This is the core loop, ending with a student asking a question about what was taught.
-2. **Web phase A:** the screens for features 1 to 9, in the order of the flows: login, admin structure, invitations, syllabus review, CR entry, approval queue, student chat and catch-up.
-3. **Backend phase B: features 10 to 16** (notes, exams, study plan and cards, study room, usage dashboards, Nepali beta), each followed by its web screens.
-4. **Deploy** after phase A is stable enough for a pilot college, then again after phase B.
-
-Reason to switch to the web after feature 9: real CRs and teachers can test the core loop, and their feedback is cheaper to act on before the later features pile on.
-
-## Build progress
-
-- [x] 0. Scaffold: monorepo, shared package, lint, tests, CI, local Postgres and Qdrant
-- [x] 1. Foundations: auth, tenants, users, memberships, authz, audit, isolation tests, usage ledger
-- [x] 2. Academic structure and tenant provisioning
-- [x] 3. Invitations and enrollment
-- [x] 4. Classes
-- [x] 5. Syllabus ingestion
-- [x] 6. Class entries and approvals
-- [x] 7. CR voice and photo input
-- [x] 8. Student Q&A
-- [x] 9. Catch-up
-- Web phase A (screens for features 1 to 9):
-  - [x] Shell, design tokens, UI kit, sign-in, invites, password reset, profile
-  - [x] Admin: structure, people, classes, settings
-  - [x] Admin: syllabus review
-  - [x] CR entry (text, voice, photo) and teacher approvals
-  - [x] Student chat and catch-up
-- [ ] 10. Student notes
-- [ ] 11. Exams and exam scope
+- [x] 0. **Scaffold:** monorepo, shared package, lint, tests, CI, local Postgres and Qdrant.
+- [x] 1. **Foundations:** authentication, tenants, single User, scoped memberships, authorization layer, audit log, tenant-isolation test suite, usage ledger.
+- [x] 2. **Tenant provisioning and academic structure:** Super Admin creates tenants and the University Admin; programs, batches, semesters, subjects, sections.
+- [x] 3. **Invitations and enrollment:** email invites, verification, semester-specific section assignment with history, CR and teacher assignment.
+- [x] 4. **Classes:** subject x section x teacher.
+- [x] 5. **Syllabus ingestion:** upload per subject per batch, extraction, draft review with natural-language changes, publish, versions, copy from previous batch, chunking and embedding, job queue and file storage.
+- [x] 6. **Class entries (text):** CR and teacher entries, AI organization, topic mapping, `taught_on`, versions, approval workflow, reminders.
+- [x] 7. **CR voice and photo input** with review before submit.
+- [x] 8. **Student Q&A:** router, retrieval with access re-check, syllabus classification, labeled answers, source references, private chat history.
+- [x] 9. **Catch-up and date-based questions.**
+- [x] Web screens for features 1 to 9: shell, sign-in, invites, profile; admin structure, people, classes, settings; syllabus review; CR entry (text, voice, photo) and teacher approvals; student chat and catch-up; Super Admin colleges page.
+- [x] V1 hardening: forced RLS and startup role check, Playwright browser tests, keyboard and screen-reader pass, Dockerfiles, production compose and backups.
+- [ ] 10. Student notes and "Check my notes"
+- [ ] 11. Exams and exam scope, plus "what comes in the exam?"
 - [ ] 12. Study plan
 - [ ] 13. Study cards
-- [ ] 14. Study room
-- [ ] 15. Usage dashboards and quotas
-- [ ] 16. Nepali beta (if the test passes)
-- [ ] 17. Deploy
+- [ ] 14. Study room: question generation, rubric grading, mastery
+- [ ] 15. Usage dashboards, quotas and plan limits
+- [ ] 16. Nepali beta, only if the language test passes
+- [ ] 17. Deploy: a pilot after V1 ([deploy.md](deploy.md)), then again after V2
+
+## Status
+
+Updated 2026-10-19, at the end of V1. In a long session, record progress here (what is done, what is next, open questions) before the context runs out, so a fresh session can continue.
+
+### Built
+
+Features 0 to 9 with their web screens, and the hardening pass, all committed on `main` (only the scaffold was pushed). The commits use the feature scopes: `feat(scaffold)`, `feat(foundations)`, `feat(structure)`, `feat(enrollments)`, `feat(classes)`, `feat(syllabus)`, `feat(sessions)`, `feat(media)`, `feat(chat)`, `feat(catchup)`, `feat(web): ...`, `feat(db)`, `test(web)`, `feat(deploy)`.
+
+### Verified, and how
+
+- `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm build` pass; `pnpm test`: 219 API, 19 web and 4 shared tests (real Postgres, Redis and Qdrant in Docker; OpenAI, R2 and email mocked).
+- `pnpm e2e`: 7 Playwright tests against the compiled API and worker and `next start`, the reseeded demo college and a fake OpenAI server; passed three runs in a row. The flows covered are listed in [local-setup.md](local-setup.md).
+- Real OpenAI: `smoke:ai` (about $0.02) confirmed all six configured model names, strict JSON output, PDF file input for scans, image input, embeddings and a price row for every model. One real chat question was asked through the API and its answer (labels, [S1] chips, general explanation) renders correctly.
+- Screens: screenshots against production builds with the demo college, 19 pages for 5 roles at 360, 768 and 1280 px in light and dark, plus the Super Admin page; no sideways scroll at 360 px and no page errors. A sample of the images was inspected, not every one.
+- Keyboard: a scripted run through sign-in, chat, CR entry, approvals and syllabus review (details in [ui-ux.md](ui-ux.md), "Keyboard pass").
+- Role check: a test starts the API and the worker as the owner (superuser) and expects them to exit. Migrations were applied as a non-superuser owner in a scratch database, where FORCE blocked that owner's writes.
+- Deployment: both images built; the production compose stack ran locally with throwaway secrets; a backup restored into a scratch database with equal row counts, forced RLS and the app role's grants (details in [deploy.md](deploy.md)).
+
+### Known gaps
+
+- Microphone recording is untested in a real browser (headless has no microphone); the transcription path was checked through the API.
+- Rendered but not exercised in a browser (each has API tests): moving and deactivating students, CSV import, inviting teachers and program admins, creating classes and changing teachers, saving settings, teacher "add an entry", the chat subject picker, deleting a chat, the quota meter.
+- The invite progress card shows "0 of 3 sent" for seeded invites, because the seed creates invites without the email log the counts read. Real invites are counted.
+- No real screen reader run (NVDA, VoiceOver, TalkBack); colour contrast not measured with a tool.
+- Coolify itself is untested: the compose file ran under plain Docker Compose, so the bind mount of `infra/postgres-init-prod.sh`, domains, TLS and Coolify's environment UI are unchecked. Real R2, Gmail and OpenAI in production are unchecked.
+- There is no command to rebuild the Qdrant index from Postgres, and none to re-index after an embedding model change.
+- Later improvements already decided: quotas on the college's own month, chat streaming, a per-CR photo-read quota (photos count toward the college budget only).
+- `EntryView.latest` can be a withdrawn version; the web app hides a withdrawn `latest`.
+
+### To test by hand
+
+1. The microphone on real phones (Android Chrome, iOS Safari).
+2. `pnpm test` on your machine (real Qdrant in Docker) and `pnpm e2e` once.
+3. A real screen reader on the main flows.
+4. After the pilot deploy, the checks in [deploy.md](deploy.md) ("After the first deploy"), daily backups off the VPS and one restore.
+
+### Next
+
+1. Deploy to a pilot college ([deploy.md](deploy.md)).
+2. V2 (features 10 to 16), each followed by its screens.
+
+### Working notes
+
+- **Migrations:** change `schema.prisma`, then `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script > prisma/migrations/<timestamp>_<name>/migration.sql` (delete the "Loaded Prisma config" first line if it lands in the file), append `ENABLE ROW LEVEL SECURITY`, `FORCE ROW LEVEL SECURITY` and the `tenant_isolation` policy for every new tenant table (`rls-coverage.test.ts` fails otherwise), `npx prisma migrate deploy`, then run the diff again to confirm it is empty. Composite foreign keys go in the schema (`@relation(fields: [xId, tenantId], references: [id, tenantId])`); a one-to-one one also needs `@@unique([xId, tenantId])`.
+- `prisma migrate reset` is blocked for AI agents; avoid needing it. `20261018214529_structure_path_integrity` is an empty, harmless migration.
+- The Bash tool mangles backslashes and turns `\n` inside patch scripts into real newlines: write source with the file tools, or check the result after a scripted patch.
+- `pg` prints "Calling client.query() when the client is already executing a query" during tests. It comes from Prisma 7's query interpreter loading `include` relations in parallel on one transaction connection; `pg@8` queues them safely. Do not upgrade to `pg@9` until Prisma serializes these.
+- Cross-module hooks are wired in `apps/api/src/wiring.ts`. Module dependencies run one way: chat → catchup → sessions → media → files/classes; nothing imports chat.
+- API test helpers: `test/world.ts` (two colleges; `addTeacher`, `addStudent` with `{ cr: true }`, `addClass`), `test/fakes.ts` (`FakeStorage`, `FakeAi` with `respond(schemaName, ...)`, `transcript`, `failNext`, deterministic `vectorFor`, `makePdf`), `test/syllabus.ts` (`publishSyllabus`), `test/jobs.ts` (`drainQueue`).
+- Browser tests: `apps/web/e2e`. `pnpm e2e` needs ports 3000, 4000 and 4010 free and **resets the demo college in the development database**. A new AI schema name needs a fake answer in `e2e/support/fake-openai.ts`.
+- Web conventions: client components fetch with TanStack Query (`features/admin/queries.ts`, `features/entries/shared.tsx` hold keys); forms in sheets use `FormSheet`; field errors come from `ApiError.field(path)`; every user-facing string is in `src/lib/strings.ts`; show the API's own message for 409s; uploads go through `lib/upload.ts`.
+- Next.js builds a standalone server only with `NEXT_OUTPUT_STANDALONE=1` (the web Dockerfile sets it); locally `next start` is used.
+- A real `OPENAI_API_KEY` sits in `apps/api/.env` (git-ignored): never print, log or commit it.
