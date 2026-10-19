@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/strings";
 import { Button, IconButton } from "./button";
@@ -71,6 +71,72 @@ export function Sheet({
         </div>
       )}
     </dialog>
+  );
+}
+
+/**
+ * A small form in a sheet: the fields, the API's error above them (field errors are passed to
+ * the fields by the caller), and one submit button.
+ */
+export function FormSheet({
+  open,
+  onClose,
+  title,
+  submitLabel,
+  onSubmit,
+  busy,
+  error,
+  children,
+  wide,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  submitLabel: string;
+  onSubmit: () => void;
+  busy?: boolean;
+  error?: string | null;
+  children: ReactNode;
+  wide?: boolean;
+}) {
+  const formId = useId();
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={title}
+      wide={wide}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            {t.common.cancel}
+          </Button>
+          <Button type="submit" form={formId} loading={busy}>
+            {submitLabel}
+          </Button>
+        </>
+      }
+    >
+      <form
+        id={formId}
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit();
+        }}
+        className="flex flex-col gap-4"
+      >
+        {error && (
+          <p
+            role="alert"
+            className="rounded-control bg-danger-soft px-3 py-2.5 text-[15px] text-danger"
+          >
+            {error}
+          </p>
+        )}
+        {children}
+      </form>
+    </Sheet>
   );
 }
 
