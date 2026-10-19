@@ -24,6 +24,8 @@ export interface NavItem {
   href: string;
   label: string;
   icon: IconName;
+  /** A count shown on the item (entries waiting for approval). */
+  badge?: number;
 }
 
 const profile: NavItem = { href: "/profile", label: t.nav.profile, icon: "user" };

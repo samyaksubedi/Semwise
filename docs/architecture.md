@@ -351,7 +351,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
   - [x] Shell, design tokens, UI kit, sign-in, invites, password reset, profile
   - [ ] Admin: structure, people, classes, settings
   - [ ] Admin: syllabus review (built; screenshot check pending)
-  - [ ] CR entry (text, voice, photo) and teacher approvals
+  - [ ] CR entry (text, voice, photo) and teacher approvals (built; screenshot check pending)
   - [ ] Student chat and catch-up
 - [ ] 10. Student notes
 - [ ] 11. Exams and exam scope

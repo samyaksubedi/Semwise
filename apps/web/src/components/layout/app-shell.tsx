@@ -1,5 +1,7 @@
 "use client";
 
+import type { ApprovalItem } from "@semwise/shared";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronsLeft, ChevronsRight, Lock, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -21,6 +23,7 @@ import {
   type NavItem,
 } from "@/lib/nav";
 import { activeCollege, useSession } from "@/lib/session";
+import { api } from "@/lib/api";
 import { t } from "@/lib/strings";
 
 const LAST_AREA = "semwise-area";
@@ -61,6 +64,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       // Storage blocked: the area is worked out from the page each time.
     }
   }, [area]);
+  // The count of entries waiting shows on the Approvals tab.
+  const approvals = useQuery({
+    queryKey: ["approvals"],
+    queryFn: () => api<ApprovalItem[]>("/approvals"),
+    enabled: area === "teacher",
+    refetchInterval: 60_000,
+  });
 
   if (isPending || !session || (!session.activeTenantId && !session.user.isSuperAdmin)) {
     return (
@@ -72,7 +82,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
-  const items = area ? navFor(area) : [];
+  const waiting = approvals.data?.length ?? 0;
+  const items = (area ? navFor(area) : []).map((item) =>
+    item.href === "/approvals" && waiting ? { ...item, badge: waiting } : item,
+  );
   const college = activeCollege(session);
   const pathArea = areaOfPath(pathname);
   const allowed = areasFor(session);
@@ -129,6 +142,21 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
       <BottomTabs items={items} pathname={pathname} />
     </div>
+  );
+}
+
+/** A count on a nav item; the number is also read out after the label. */
+function Badge({ count, floating }: { count: number; floating?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "min-w-5 rounded-full bg-accent px-1.5 text-center text-xs leading-5 font-semibold text-on-accent",
+        floating ? "absolute -top-1.5 -right-2.5" : "ml-auto",
+      )}
+    >
+      {count}
+      <span className="sr-only"> {t.nav.waitingCount}</span>
+    </span>
   );
 }
 
@@ -226,6 +254,7 @@ function Sidebar({
                 >
                   <NavIcon name={item.icon} className="size-5 shrink-0" />
                   {!collapsed && <span className="truncate">{item.label}</span>}
+                  {item.badge ? <Badge count={item.badge} /> : null}
                 </Link>
               </li>
             );
@@ -277,7 +306,10 @@ function BottomTabs({ items, pathname }: { items: NavItem[]; pathname: string })
                 aria-current={active ? "page" : undefined}
                 className={tab(active)}
               >
-                <NavIcon name={item.icon} className="size-6" />
+                <span className="relative">
+                  <NavIcon name={item.icon} className="size-6" />
+                  {item.badge ? <Badge count={item.badge} floating /> : null}
+                </span>
                 <span className="max-w-full truncate px-1">{item.label}</span>
               </Link>
             </li>
