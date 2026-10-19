@@ -1,0 +1,109 @@
+/*
+ * Design tokens (docs/ui-ux.md): neutral surfaces, one indigo accent, semantic status colours.
+ * The theme follows the system unless the person picks one (data-theme on <html>).
+ */
+:root {
+  color-scheme: light;
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f1f2f4;
+  --border: #e3e5e9;
+  --border-strong: #cdd1d8;
+  --text: #16181d;
+  --text-muted: #5b616e;
+  --text-faint: #848a96;
+
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef0ff;
+  --accent-text: #3730a3;
+  --on-accent: #ffffff;
+
+  --success: #15803d;
+  --success-soft: #e8f6ee;
+  --warning: #a15c07;
+  --warning-soft: #fdf3e2;
+  --danger: #c02631;
+  --danger-soft: #fdecee;
+  --info: #0e6aa8;
+  --info-soft: #e6f2fb;
+
+  --focus: #6366f1;
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.04);
+  --shadow-lg: 0 10px 30px rgb(16 24 40 / 0.12);
+
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration: 170ms;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1115;
+  --surface: #171a20;
+  --surface-2: #1f232b;
+  --border: #2a2f39;
+  --border-strong: #3a404c;
+  --text: #eceef2;
+  --text-muted: #a5abb7;
+  --text-faint: #7d8492;
+
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
+  --accent-soft: #23264a;
+  --accent-text: #c7cdfe;
+  --on-accent: #0f1115;
+
+  --success: #4ade80;
+  --success-soft: #142a1d;
+  --warning: #fbbf24;
+  --warning-soft: #2e2410;
+  --danger: #f87171;
+  --danger-soft: #331618;
+  --info: #60a5fa;
+  --info-soft: #132538;
+
+  --focus: #a5b4fc;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 30px rgb(0 0 0 / 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f1115;
+    --surface: #171a20;
+    --surface-2: #1f232b;
+    --border: #2a2f39;
+    --border-strong: #3a404c;
+    --text: #eceef2;
+    --text-muted: #a5abb7;
+    --text-faint: #7d8492;
+
+    --accent: #818cf8;
+    --accent-hover: #a5b4fc;
+    --accent-soft: #23264a;
+    --accent-text: #c7cdfe;
+    --on-accent: #0f1115;
+
+    --success: #4ade80;
+    --success-soft: #142a1d;
+    --warning: #fbbf24;
+    --warning-soft: #2e2410;
+    --danger: #f87171;
+    --danger-soft: #331618;
+    --info: #60a5fa;
+    --info-soft: #132538;
+
+    --focus: #a5b4fc;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 30px rgb(0 0 0 / 0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration: 0ms;
+  }
+}

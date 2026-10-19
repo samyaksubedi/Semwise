@@ -1,0 +1,74 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+/* Tokens as Tailwind colours: bg-surface, text-muted, border-border, bg-accent ... */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+  --color-on-accent: var(--on-accent);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-focus: var(--focus);
+
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --shadow-soft: var(--shadow);
+  --shadow-lift: var(--shadow-lg);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    /* 16 px body on phones keeps iOS from zooming into inputs. */
+    font-size: 16px;
+  }
+  @media (min-width: 768px) {
+    body {
+      font-size: 15px;
+    }
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--accent-soft);
+  }
+}
+
+/* Motion: one duration and easing everywhere, removed for reduced motion (tokens.css). */
+@utility transition-calm {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: var(--duration);
+  transition-timing-function: var(--ease);
+}
+
+/* Room for the bottom tab bar and the home indicator on phones. */
+@utility pb-tabbar {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}

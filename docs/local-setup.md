@@ -68,7 +68,26 @@ Running it again for the same email resets that account's password and keeps it 
 pnpm dev
 ```
 
-This builds the shared package, starts the API on http://localhost:4000, waits for `/v1/health`, then starts the worker (and the web app once it exists).
+This builds the shared package, starts the API on http://localhost:4000, waits for `/v1/health`, then starts the worker and the web app on http://localhost:3000. The web app reads `NEXT_PUBLIC_API_URL` (default `http://localhost:4000`; copy `apps/web/.env.example` to `apps/web/.env.local` to change it).
+
+### Demo data
+
+```powershell
+pnpm --filter @semwise/api seed:demo
+```
+
+Creates (or recreates) "Demo College": one account per role (`admin`, `program`, `teacher`, `teacher2`, `cr`, `student`, `student2` at `@demo.semwise.local`, password `semwise demo 2026`), a program with a batch, semester, sections, subjects and published syllabi, classes, a week of class entries and one entry waiting for the teacher. With `OPENAI_API_KEY` set it also indexes the content (a fraction of a cent) so chat can answer.
+
+### Screenshots (UI check)
+
+With the dev servers running and the demo data seeded, once per machine `pnpm --filter @semwise/web exec playwright install chromium`, then for example:
+
+```powershell
+cd apps/web
+node scripts/screens.mjs ./shots anon:/login student:/chat,/catchup program:/admin
+```
+
+It saves each page at 360, 768 and 1280 px in light and dark, and lists any page that scrolls sideways at 360 px.
 
 Check: http://localhost:4000/v1/health/ready should report `database`, `redis` and `qdrant` as `ok`.
 

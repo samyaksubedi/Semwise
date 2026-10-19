@@ -19,6 +19,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "smoke:ai": "tsx --env-file-if-exists=.env src/scripts/smoke-ai.ts",
+    "seed:demo": "tsx --env-file-if-exists=.env src/scripts/seed-demo.ts",
     "super-admin:create": "tsx --env-file-if-exists=.env src/scripts/create-super-admin.ts"
   },
   "dependencies": {

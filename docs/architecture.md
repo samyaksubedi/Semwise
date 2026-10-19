@@ -277,6 +277,8 @@ apps/web/src/
 
 Menus and routes only reflect roles; the API enforces permissions regardless of what the UI shows.
 
+As built (web phase A): the browser calls the API directly at `NEXT_PUBLIC_API_URL` with `credentials: "include"`; the session cookie lives on the API's host, so signed-in data is fetched in client components with TanStack Query (Server Components render the static shell). A 401 anywhere sends the person to `/login?next=...` (same-site paths only). The shell picks an **area** (student, CR, teacher, admin, platform) from the URL, shows that area's tabs, and offers the other areas on the profile page; a URL of an area the person does not have shows a "not in your role" state. Every user-facing string is in `src/lib/strings.ts`. The theme follows the system, with a manual choice stored in `localStorage` and applied by an inline script before the first paint.
+
 ## Configuration
 
 `apps/api/src/config/env.ts` validates all environment variables with Zod at startup and exits with a clear message on a bad value (as in the blog). Planned variables, beyond the blog's `DATABASE_URL`, `CORS_ORIGINS`, `ADMIN_ORIGINS`, `TRUST_PROXY_HOPS` and `INTERNAL_API_KEY`:
@@ -345,6 +347,12 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 - [x] 7. CR voice and photo input
 - [x] 8. Student Q&A
 - [x] 9. Catch-up
+- Web phase A (screens for features 1 to 9):
+  - [x] Shell, design tokens, UI kit, sign-in, invites, password reset, profile
+  - [ ] Admin: structure, people, classes, settings
+  - [ ] Admin: syllabus review
+  - [ ] CR entry (text, voice, photo) and teacher approvals
+  - [ ] Student chat and catch-up
 - [ ] 10. Student notes
 - [ ] 11. Exams and exam scope
 - [ ] 12. Study plan

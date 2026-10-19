@@ -144,3 +144,4 @@ vite.config.ts.timestamp-*
 
 # Semwise
 apps/api/src/generated/
+apps/web/next-env.d.ts

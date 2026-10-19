@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import prettier from "eslint-config-prettier";
+import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
@@ -26,6 +27,14 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+    },
+  },
+  {
+    // The web app runs in the browser; hooks follow React's rules.
+    files: ["apps/web/**/*.{ts,tsx}"],
+    ...reactHooks.configs.flat.recommended,
+    languageOptions: {
+      globals: { ...globals.browser },
     },
   },
   {
