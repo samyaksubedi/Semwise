@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { ErrorCode } from "@semwise/shared";
 import type { Request } from "express";
 import {
@@ -141,10 +142,28 @@ const loginPerEmail = limiter("login-email", HOUR, 10, {
 
 export const loginLimit = [loginPerIp, loginPerEmail];
 
-/** Password-reset and invite-acceptance requests: 5 per hour per IP and per email. */
+/** Password-reset requests: 10 per hour per IP and 5 per hour per email. */
 export const tokenRequestLimit = [
   limiter("token-ip", HOUR, 10),
   limiter("token-email", HOUR, 5, { keyGenerator: emailKey }),
+];
+
+function inviteTokenKey(req: Request): string {
+  const token = (req.body as { token?: unknown } | undefined)?.token;
+  return typeof token === "string" && token
+    ? `token:${createHash("sha256").update(token).digest("hex").slice(0, 32)}`
+    : `ip:${byIp(req)}`;
+}
+
+/**
+ * Invite preview and accept (people not signed in yet). These requests carry a token, not an
+ * email, so counting per email would lump everyone on one address into one bucket. Instead:
+ * 120 per hour per IP (a campus network shares one address) and 20 per hour per invite token
+ * (a page load, a few reloads and some failed attempts all fit). The token is hashed in the key.
+ */
+export const inviteTokenLimit = [
+  limiter("invite-token-ip", HOUR, 120),
+  limiter("invite-token", HOUR, 20, { keyGenerator: inviteTokenKey }),
 ];
 
 /** 600 calls per minute per signed-in user across the tenant API. */
