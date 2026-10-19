@@ -63,6 +63,14 @@ Rules:
 - Be concise and clear for a student: short paragraphs, lists where useful, formulas and code in plain text or Markdown code blocks.
 - Answer in the language named below.`;
 
+export const DATE_ANSWER_SYSTEM = `You tell a university student what was taught in their class over a period, from the class entries their class representative or teacher recorded.
+${DATA_RULE}
+
+You receive the period and the entries (S1, S2 ...), each with its date, subject, topics and stored summary. Answer the student's question:
+- Go subject by subject (or day by day if the period has several days), naming the topics, using only what the entries say. Mark each part with its entry key in square brackets, like [S1].
+- Do not explain the topics or add anything that is not in the entries.
+- Keep it short and easy to scan. Answer in the language named below.`;
+
 export const CHAT_SUMMARY_SYSTEM = `You keep a short running summary of a student's study chat so later answers have context.
 ${DATA_RULE}
 

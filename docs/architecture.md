@@ -344,7 +344,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 - [x] 6. Class entries and approvals
 - [x] 7. CR voice and photo input
 - [x] 8. Student Q&A
-- [ ] 9. Catch-up
+- [x] 9. Catch-up
 - [ ] 10. Student notes
 - [ ] 11. Exams and exam scope
 - [ ] 12. Study plan

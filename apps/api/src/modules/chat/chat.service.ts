@@ -16,6 +16,7 @@ import { todayIn, weekday } from "../../common/time.js";
 import { logger } from "../../lib/logger.js";
 import { aiService, isAiConfigured, models, type AiContext } from "../ai/index.js";
 import { Action, can, type Actor, type Resource } from "../authz/index.js";
+import { catchupService, cleanRange } from "../catchup/index.js";
 import { knowledgeService } from "../knowledge/index.js";
 import { sessionsService } from "../sessions/index.js";
 import { structureService } from "../structure/index.js";
@@ -280,6 +281,83 @@ function sourceBlock(sources: Source[]): string {
     .join("\n\n");
 }
 
+interface Reply {
+  content: string;
+  scope: ChatScope;
+  labels: AnswerLabel[];
+  citations: Citation[];
+  model: string | null;
+}
+
+/** Most entries one date answer summarizes (a month of a busy section). */
+const MAX_DATE_ENTRIES = 40;
+
+async function answerDate(
+  actor: Actor,
+  ctx: AiContext,
+  sectionIds: string[],
+  range: { from: string; to: string },
+  conversation: Conversation,
+  question: string,
+  language: string,
+): Promise<Reply> {
+  const view = await catchupService.collect(
+    actor,
+    sectionIds,
+    range.from,
+    range.to,
+    conversation.pinnedSubjectId,
+  );
+  const period = range.from === range.to ? range.from : `${range.from} to ${range.to}`;
+  const entries = view.subjects
+    .flatMap((group) => group.entries.map((entry) => ({ subject: group.subject, entry })))
+    .sort((x, y) => x.entry.taughtOn.localeCompare(y.entry.taughtOn))
+    .slice(0, MAX_DATE_ENTRIES)
+    .map((item, i) => ({ ...item, key: `S${i + 1}` }));
+  if (entries.length === 0) {
+    return {
+      content: `Nothing was recorded as taught for ${period}. Your CR or teacher may not have added it yet.`,
+      scope: "DATE",
+      labels: ["NOT_IN_MATERIAL"],
+      citations: [],
+      model: null,
+    };
+  }
+  const block = entries
+    .map(({ key, subject, entry }) => {
+      const topics = entry.topics
+        .map((t) => (t.subtopics.length ? `${t.title} (${t.subtopics.join(", ")})` : t.title))
+        .join("; ");
+      return `${key} ${entry.taughtOn}, ${subject.name} (${subject.code})\nTopics: ${topics || "(none listed)"}\nSummary: ${entry.summary ?? "(none)"}`;
+    })
+    .join("\n\n");
+  const content = await aiService.answerDateQuestion(ctx, {
+    period,
+    entries: block,
+    question,
+    language,
+  });
+  return {
+    content,
+    scope: "DATE",
+    labels: ["REPORTED_IN_CLASS"],
+    citations: entries.map(({ key, subject, entry }) => ({
+      key,
+      kind: "CLASS",
+      subject,
+      unitNo: null,
+      unitTitle: null,
+      topicTitle: null,
+      syllabusVersionId: null,
+      entryId: entry.entryId,
+      entryVersionId: entry.versionId,
+      taughtOn: entry.taughtOn,
+      versionNo: entry.versionNo,
+    })),
+    model: models.router(),
+  };
+}
+
 export const chatService = {
   async create(actor: Actor, input: CreateConversationInput): Promise<ConversationView> {
     requireStudent(actor);
@@ -371,14 +449,12 @@ export const chatService = {
     const language = cleanLanguage(route.language);
     const later = { ...ctx, countsAsNewRequest: false };
 
-    let reply: {
-      content: string;
-      scope: ChatScope;
-      labels: AnswerLabel[];
-      citations: Citation[];
-      model: string | null;
-    };
-    if (route.scope === "UNRELATED") {
+    const range = route.dates.isDateQuestion ? cleanRange(route.dates, today) : null;
+    let reply: Reply;
+    if (range) {
+      // "What was taught on Monday?" is not a vector search: Postgres returns the period's entries.
+      reply = await answerDate(actor, later, area.sectionIds, range, conversation, text, language);
+    } else if (route.scope === "UNRELATED") {
       // A polite decline: no retrieval and no expensive call.
       reply = { content: DECLINE_TEXT, scope: "UNRELATED", labels: [], citations: [], model: null };
     } else {

@@ -4,6 +4,7 @@ import { userLimit } from "./common/middleware/rate-limit.js";
 import { classApprovalRouter, programApprovalRouter } from "./modules/approvals/index.js";
 import { auditPlatformRouter, auditRouter } from "./modules/audit/index.js";
 import { authRouter, loadSession, requireAuth } from "./modules/auth/index.js";
+import { catchupRouter } from "./modules/catchup/index.js";
 import { chatRouter } from "./modules/chat/index.js";
 import { classesRouter, semesterClassesRouter } from "./modules/classes/index.js";
 import { requireSuperAdmin, resolveTenant } from "./modules/authz/index.js";
@@ -100,6 +101,7 @@ export function createV1Router(): Router {
     ["/entries", entriesRouter],
     ["/approvals", approvalsQueueRouter],
     ["/chat", chatRouter],
+    ["/catchup", catchupRouter],
     ["/sections", sectionsRouter],
     ["/sections", sectionCrRouter],
     ["/subjects", subjectsRouter],

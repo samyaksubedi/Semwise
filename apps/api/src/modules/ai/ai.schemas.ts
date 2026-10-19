@@ -133,6 +133,8 @@ export type ChatAnswer = z.infer<typeof chatAnswerSchema>;
 
 export const chatSummarySchema = z.strictObject({ summary: z.string().max(3000) });
 
+export const dateAnswerSchema = z.strictObject({ answer: z.string().min(1).max(6000) });
+
 export const photoReadingSchema = z.strictObject({
   text: z.string().max(8000),
   unreadable: z.boolean(),

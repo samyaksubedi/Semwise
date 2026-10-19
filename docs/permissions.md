@@ -80,6 +80,7 @@ Roles: **SA** Super Admin, **UA** University Admin, **PA** Program Admin, **T** 
 | Action                                       | SA  | UA  | PA  | T                 | CR  | S   |
 | -------------------------------------------- | --- | --- | --- | ----------------- | --- | --- |
 | Ask questions in chat, use catch-up          | -   | -   | -   | -                 | own | own |
+| Read or delete a chat conversation           | -   | -   | -   | -                 | own | own |
 | Notes, "Check my notes"                      | -   | -   | -   | -                 | own | own |
 | Study plan, study cards, study room, mastery | -   | -   | -   | -                 | own | own |
 | See which topics students find hard          | -   | agg | agg | agg (own classes) | -   | -   |

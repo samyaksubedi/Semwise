@@ -126,6 +126,8 @@ As built: `POST /v1/chat/conversations` (optionally `pinnedSubjectId`, `includeP
 
 **Catch-up screen**: the student picks dates and sees per-subject summaries directly (no AI call, summaries are precomputed), with a button to ask a follow-up in chat.
 
+As built: `GET /v1/catchup?from&to&subjectId` (dates default to today in the college's timezone, at most 31 days) returns the live, visible entries of the student's current section grouped by subject in date order, with each entry's stored summary, topics and version; pending and taken-down entries never appear. In chat, the router also reads date phrases; the range is cleaned on the server (real dates, in order, never past today, at most the latest 31 days; an unusable range falls back to a normal question). The entries come from Postgres for the student's sections (current, plus past ones if the chat includes past semesters) and the pinned subject, and one Luna call summarizes them with [S1] markers, citing each entry. With no entries the reply says nothing was recorded, without any AI call. It counts as one chat question.
+
 ## 10. Student notes
 
 1. Student writes a note in a subject (optionally tied to a topic or class session) or in the inbox; saved AI answers can be stored as notes.

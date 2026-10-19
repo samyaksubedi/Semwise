@@ -376,6 +376,7 @@ async function main() {
   for (const q of [
     "How do I convert an infix expression to postfix? Did we do examples in class?",
     "Write me a poem about the monsoon.",
+    "What was taught today?",
   ]) {
     const res = ok(
       await crAgent.post(`/v1/chat/conversations/${chat.id}/messages`).send({ text: q }),
@@ -409,6 +410,16 @@ async function main() {
     console.log(`  A: ${a.content.replace(/\n+/g, "\n     ")}`);
     console.log(`  Questions used this month: ${res.quota.used} of ${res.quota.limit}\n`);
   }
+
+  const catchup = ok(await crAgent.get("/v1/catchup"), 200, "catch-up") as {
+    subjects: { subject: { name: string }; entries: { summary: string | null }[] }[];
+  };
+  console.log("  Catch-up for today (stored summaries, no AI call):");
+  for (const g of catchup.subjects)
+    console.log(
+      `    ${g.subject.name}: ${g.entries.length} entr${g.entries.length === 1 ? "y" : "ies"}`,
+    );
+  console.log();
 
   // ---------- The ledger ----------
   console.log("7. Usage ledger for this college (text-to-speech for the clip is not in it)");

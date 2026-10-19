@@ -9,6 +9,7 @@ import {
   CHAT_ANSWER_SYSTEM,
   CHAT_ROUTE_SYSTEM,
   CHAT_SUMMARY_SYSTEM,
+  DATE_ANSWER_SYSTEM,
   ENTRY_ORGANIZE_SYSTEM,
   PHOTO_READ_SYSTEM,
   SYLLABUS_CHANGE_SYSTEM,
@@ -19,6 +20,7 @@ import {
   chatAnswerSchema,
   chatRouteSchema,
   chatSummarySchema,
+  dateAnswerSchema,
   entryOrganizeSchema,
   photoReadingSchema,
   syllabusChangeSchema,
@@ -268,6 +270,25 @@ export const aiService = {
       schemaName: "chat_answer",
       maxOutputTokens: 3000,
     });
+  },
+
+  /** "What was taught on Monday?": one cheap call over the stored summaries of that period. */
+  async answerDateQuestion(
+    ctx: AiContext,
+    input: { period: string; entries: string; question: string; language: string },
+  ): Promise<string> {
+    const result = await structured(ctx, "CHAT", "date_answer", models.router(), {
+      system: `${DATE_ANSWER_SYSTEM}\nAnswer in: ${input.language}.`,
+      input: [
+        { type: "text", text: `The period asked about: ${input.period}.` },
+        { type: "text", text: dataBlock("class entries", input.entries) },
+        { type: "text", text: dataBlock("question", input.question) },
+      ],
+      schema: dateAnswerSchema,
+      schemaName: "date_answer",
+      maxOutputTokens: 1500,
+    });
+    return result.answer;
   },
 
   /** Folds older turns into the conversation's running summary. */
