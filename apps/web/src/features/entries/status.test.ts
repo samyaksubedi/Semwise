@@ -1,6 +1,6 @@
 import type { EntryVersionView, EntryView } from "@semwise/shared";
 import { describe, expect, it } from "vitest";
-import { entryStatus } from "./shared";
+import { entryStatus, shownLatest } from "./shared";
 
 const version = (patch: Partial<EntryVersionView>): EntryVersionView => ({
   id: "v",
@@ -54,5 +54,14 @@ describe("entry status", () => {
       entryStatus(entry({ live: version({}), latest: version({ status: "PENDING" }) })).label,
     ).toBe("Waiting for teacher");
     expect(entryStatus(entry({ takenDown: true, live: version({}) })).label).toBe("Taken down");
+  });
+});
+
+describe("shownLatest", () => {
+  it("hides a withdrawn change and keeps open ones", () => {
+    const live = version({ status: "PUBLISHED" });
+    expect(shownLatest(entry({ live, latest: version({ status: "WITHDRAWN" }) }))).toBeNull();
+    const pending = version({ status: "PENDING", versionNo: 2 });
+    expect(shownLatest(entry({ live, latest: pending }))).toBe(pending);
   });
 });

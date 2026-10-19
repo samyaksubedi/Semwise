@@ -76,7 +76,7 @@ This builds the shared package, starts the API on http://localhost:4000, waits f
 pnpm --filter @semwise/api seed:demo
 ```
 
-Creates (or recreates) "Demo College": one account per role (`admin`, `program`, `teacher`, `teacher2`, `cr`, `student`, `student2` at `@demo.semwise.local`, password `semwise demo 2026`), a program with a batch, semester, sections, subjects and published syllabi, classes, a week of class entries and one entry waiting for the teacher. It also makes `platform@demo.semwise.local` a Super Admin (same password; it belongs to no college) and removes colleges whose slug starts with `e2e-` (left by the browser tests). It refuses to run with `NODE_ENV=production`. With `OPENAI_API_KEY` set it also indexes the content (a fraction of a cent) so chat can answer.
+Creates (or recreates) "Demo College": one account per role (`admin`, `program`, `teacher`, `teacher2`, `cr`, `student`, `student2` to `student5` at `@demo.semwise.local`, password `semwise demo 2026`), a program with a batch, semester, sections, subjects and published syllabi, classes, a week of class entries and one entry waiting for the teacher. It also makes `platform@demo.semwise.local` a Super Admin (same password; it belongs to no college) and removes colleges whose slug starts with `e2e-` (left by the browser tests). It refuses to run with `NODE_ENV=production`. With `OPENAI_API_KEY` set it also indexes the content (a fraction of a cent) so chat can answer.
 
 ### Screenshots (UI check)
 
@@ -130,6 +130,22 @@ pnpm build
 ```
 
 `pnpm test` needs the Docker services running. It uses `semwise_test` (wiped on every run), Redis database 1, and the Qdrant collection `semwise_test_chunks`. OpenAI, R2 and email are mocked; tests never make paid calls.
+
+### Browser tests (Playwright)
+
+Once per machine: `pnpm --filter @semwise/web exec playwright install chromium`. Then, with the Docker services running and **no dev servers on ports 3000, 4000 or 4010**:
+
+```powershell
+pnpm e2e
+```
+
+It runs `pnpm build`, then `playwright test` in `apps/web` (to skip the build when it is current: `pnpm --filter @semwise/web e2e`). One worker, Chromium only, a phone-sized window, about 30 seconds of tests after a minute of setup. What happens:
+
+- A fake OpenAI server starts on port 4010 (`apps/web/e2e/support/fake-openai.ts`). It answers by schema name with fixed outlines, change proposals, entry topics and chat answers, and word-hash embeddings. The API, the worker and the seed get `OPENAI_BASE_URL` pointing at it and a fake key; the real `OPENAI_API_KEY` from `apps/api/.env` is dropped, so the browser tests never make a paid call.
+- `seed:demo` recreates the demo college in the **development** database (`semwise`) and indexes it through the fake. Anything you changed in the demo college is reset.
+- The compiled API (`dist/server.js`), the worker (`dist/worker.js`) and `next start` are started and stopped by Playwright.
+
+Flows covered: syllabus upload, a change request with one change accepted and one rejected, publishing; University Admin creating a program, batch, semester, section and subject and editing the semester (with a validation error); CR grant and replacing a CR in a full section; a CR editing a published entry and withdrawing the change; a chat question with its source sheet; catch-up range mode and the follow-up link; Super Admin creating, suspending and reactivating a college. Failures leave a screenshot and a trace in `apps/web/e2e/results/` (`pnpm --filter @semwise/web exec playwright show-trace <trace.zip>`).
 
 ## Troubleshooting
 

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ClassView, EntryTopicView, EntryView } from "@semwise/shared";
+import type { ClassView, EntryTopicView, EntryVersionView, EntryView } from "@semwise/shared";
 import { useQuery } from "@tanstack/react-query";
 import { BookMarked, CircleSlash } from "lucide-react";
 import { StatusPill, type Tone } from "@/components/ui/surface";
@@ -20,6 +20,14 @@ export function useMyClasses() {
     queryKey: entryKeys.myClasses,
     queryFn: () => api<ClassView[]>("/classes/mine"),
   });
+}
+
+/**
+ * The newer version to show beside the live one. A withdrawn change is history: the API still
+ * returns it as `latest`, but the author has taken it back, so it is not shown.
+ */
+export function shownLatest(entry: EntryView): EntryVersionView | null {
+  return entry.latest && entry.latest.status !== "WITHDRAWN" ? entry.latest : null;
 }
 
 /** One status per entry, from the newest version the person may see. */

@@ -25,7 +25,7 @@ import { formatDay, todayIn } from "@/lib/format";
 import { useTimezone } from "@/lib/session";
 import { t } from "@/lib/strings";
 import { EntryComposer } from "./composer";
-import { EntryStatus, TopicList, entryKeys, useMyClasses } from "./shared";
+import { EntryStatus, TopicList, entryKeys, shownLatest, useMyClasses } from "./shared";
 
 export function TodayPage() {
   const classes = useMyClasses();
@@ -64,7 +64,7 @@ function MediaPill({ version }: { version: EntryVersionView | null }) {
 /** A row in a list of entries: subject, day, status, first topics. */
 export function EntryRow({ entry, href }: { entry: EntryView; href: string }) {
   const tz = useTimezone();
-  const version = entry.latest ?? entry.live;
+  const version = shownLatest(entry) ?? entry.live;
   return (
     <Link
       href={href}
@@ -196,7 +196,7 @@ export function EntryPage({ id }: { id: string }) {
   if (entry.error) return <ErrorState error={entry.error} onRetry={() => void entry.refetch()} />;
   if (entry.isPending) return <ListSkeleton rows={3} />;
   const e = entry.data;
-  const latest = e.latest;
+  const latest = shownLatest(e);
   const open = latest && (latest.status === "DRAFT" || latest.status === "PENDING");
   const organizing = latest?.organize === "QUEUED" || latest?.organize === "RUNNING";
 

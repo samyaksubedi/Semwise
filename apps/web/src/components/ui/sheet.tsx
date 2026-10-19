@@ -26,6 +26,8 @@ export function Sheet({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // Unique per sheet: a confirmation can open on top of another sheet.
+  const titleId = useId();
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
@@ -36,8 +38,12 @@ export function Sheet({
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
+      // React passes a nested sheet's close and cancel events up the tree: only react to our own.
+      onClose={(e) => {
+        if (e.target === ref.current) onClose();
+      }}
       onCancel={(e) => {
+        if (e.target !== ref.current) return;
         e.preventDefault();
         onClose();
       }}
@@ -45,7 +51,7 @@ export function Sheet({
         // A click on the backdrop (the dialog element itself) closes it.
         if (e.target === ref.current) onClose();
       }}
-      aria-labelledby="sheet-title"
+      aria-labelledby={titleId}
       className={cn(
         "m-0 mt-auto max-h-[90dvh] w-full max-w-none overflow-hidden rounded-t-card border border-border bg-surface p-0 text-text shadow-lift backdrop:bg-black/40",
         "md:m-auto md:max-h-[85dvh] md:rounded-card",
@@ -55,7 +61,7 @@ export function Sheet({
       {open && (
         <div className="flex max-h-[90dvh] flex-col md:max-h-[85dvh]">
           <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
-            <h2 id="sheet-title" className="text-lg font-semibold">
+            <h2 id={titleId} className="text-lg font-semibold">
               {title}
             </h2>
             <IconButton label={t.common.close} onClick={onClose}>

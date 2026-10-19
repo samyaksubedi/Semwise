@@ -241,6 +241,7 @@ export const t = {
     crRemoved: "No longer a class representative",
     crFull: (max: number) => `This section already has ${max} CRs. Choose one to replace.`,
     replaceCr: "Replace",
+    replaceCrNamed: (name: string) => `Replace ${name}`,
     deactivate: "Deactivate",
     deactivateTitle: (name: string) => `Deactivate ${name}?`,
     deactivateBody:

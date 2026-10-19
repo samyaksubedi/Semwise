@@ -297,6 +297,7 @@ Features whose keys are unset answer 503 instead of crashing, as the blog does. 
 - Vitest with Supertest, a real Postgres database (`semwise_test`) wiped each run, files running one after another, as in the blog.
 - A dedicated **tenant-isolation test kit**: for each module, tests prove that another tenant, another section, another student, and an admin cannot reach private or foreign data, including through search and AI retrieval.
 - AI calls and Qdrant are mocked in unit tests; a small set of integration tests runs against a real Qdrant in CI.
+- Browser tests (Playwright, `apps/web/e2e`, `pnpm e2e`): a lean set of flows against production builds, the seeded demo college and a fake OpenAI server; one worker, Chromium only. See local-setup.md.
 
 ## Local development
 

@@ -159,6 +159,10 @@ async function main() {
       cr: await user("cr", "Aarav Gurung"),
       student: await user("student", "Priya Maharjan"),
       student2: await user("student2", "Nabin Rai"),
+      // More joined classmates in section A, so a section can fill up with CRs.
+      student3: await user("student3", "Asha Bhandari"),
+      student4: await user("student4", "Dipesh KC"),
+      student5: await user("student5", "Manisha Rana"),
       platform: await user("platform", "Platform Operator"),
     };
     await membershipsService.grantSuperAdmin(people.platform.id);
@@ -231,6 +235,9 @@ async function main() {
     await member(people.cr.id, "CR", { sectionId: sectionA.id });
     await enrol(people.student, "BIT-002", sectionA.id);
     await enrol(people.student2, "BIT-031", sectionB.id);
+    await enrol(people.student3, "BIT-003", sectionA.id);
+    await enrol(people.student4, "BIT-004", sectionA.id);
+    await enrol(people.student5, "BIT-005", sectionA.id);
     // Students invited but not joined yet.
     for (const [i, name] of ["Kiran Lama", "Sabina Tamang", "Rohan Joshi"].entries()) {
       const email = mail(`invited${i + 1}`);
@@ -531,6 +538,9 @@ async function main() {
     ["CR and student, section A", "cr"],
     ["Student, section A", "student"],
     ["Student, section B", "student2"],
+    ["Student, section A", "student3"],
+    ["Student, section A", "student4"],
+    ["Student, section A", "student5"],
     ["Super Admin (no college)", "platform"],
   ]) {
     console.log(`  ${role.padEnd(28)} ${mail(who)}`);

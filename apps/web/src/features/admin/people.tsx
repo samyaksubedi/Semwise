@@ -592,6 +592,7 @@ function StudentSheet({
                       size="sm"
                       variant="secondary"
                       disabled={busy}
+                      aria-label={t.people.replaceCrNamed(c.displayName ?? c.email)}
                       onClick={() => action.mutate(`replace:${c.id}`)}
                     >
                       {t.people.replaceCr}
