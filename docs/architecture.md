@@ -151,7 +151,7 @@ Rate limits count in Redis (shared by every API instance). AI routes also pass t
 ## Data layer
 
 - Prisma 7 with the `pg` adapter; client generated into `src/generated/prisma`; migrations in `apps/api/prisma/migrations`.
-- Every tenant-owned table has a `tenantId` column with an index. Postgres row-level security is enabled on these tables as a second line of defence (see data-model.md); explicit `tenantId` filtering in repositories is still mandatory.
+- Every tenant-owned table has a `tenantId` column with an index. Postgres row-level security is enabled and forced on these tables as a second line of defence (see data-model.md); explicit `tenantId` filtering in repositories is still mandatory. The API and the worker refuse to start if `DATABASE_URL` connects as a superuser or a BYPASSRLS role.
 - The conceptual tables, fields and constraints are in [data-model.md](data-model.md); who may do what is in [permissions.md](permissions.md); user flows are in [app-flows.md](app-flows.md).
 - A Semester belongs to one batch (no reusable semester definitions), because each batch has its own subjects and syllabus.
 - Syllabus, entries and exam scope all use the same pattern: immutable versions plus a pointer to the current live version.

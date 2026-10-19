@@ -30,7 +30,7 @@ This starts, from `infra/docker-compose.dev.yml`:
 | Mailpit   | 1025, 8025 | Catches every email; read them at http://localhost:8025                     |
 | SeaweedFS | 9000       | S3-compatible stand-in for Cloudflare R2 (key `semwise` / `semwise-secret`) |
 
-Postgres has two roles: `semwise` owns the tables and runs migrations; `semwise_app` is what the API, the worker and the tests connect as. `semwise_app` cannot bypass row-level security. The roles are created by `infra/postgres-init.sql` the first time the volume is created. If you created the volume before that file existed, reset it with `pnpm db:down` then `docker volume rm semwise_pgdata` and `pnpm db:up`.
+Postgres has two roles: `semwise` owns the tables and runs migrations; `semwise_app` is what the API, the worker and the tests connect as. `semwise_app` cannot bypass row-level security, and the API and the worker refuse to start if `DATABASE_URL` points at a superuser or BYPASSRLS role (such as `semwise`). The roles are created by `infra/postgres-init.sql` the first time the volume is created. If you created the volume before that file existed, reset it with `pnpm db:down` then `docker volume rm semwise_pgdata` and `pnpm db:up`.
 
 MinIO is named in older notes as the R2 stand-in; it no longer publishes public Docker images, so SeaweedFS's S3 gateway is used instead. The API talks to it through the same S3 client it uses for R2.
 

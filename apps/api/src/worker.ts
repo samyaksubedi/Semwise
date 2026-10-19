@@ -1,4 +1,5 @@
 import { Worker } from "bullmq";
+import { assertSafeDatabaseRole } from "./common/db/role-check.js";
 import { runWithRequestId } from "./common/http/request-context.js";
 import { env } from "./config/env.js";
 import { handlers, loadJobHandlers, queueSettings, scheduledJobs } from "./jobs/index.js";
@@ -12,6 +13,14 @@ import { wireModules } from "./wiring.js";
  * The worker process: same image as the API, started with `node dist/worker.js`.
  * It runs every BullMQ job, so slow AI work never blocks web requests.
  */
+// Row-level security must apply to jobs too: refuse a superuser or BYPASSRLS role.
+try {
+  await assertSafeDatabaseRole();
+} catch (err) {
+  logger.fatal({ err }, "Unsafe database role; the worker will not start");
+  process.exit(1);
+}
+
 wireModules();
 await loadJobHandlers();
 

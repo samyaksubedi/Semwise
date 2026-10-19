@@ -1,4 +1,5 @@
 import { createApp } from "./app.js";
+import { assertSafeDatabaseRole } from "./common/db/role-check.js";
 import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
 import { prisma } from "./lib/prisma.js";
@@ -12,6 +13,14 @@ try {
   await getRedis().ping();
 } catch (err) {
   logger.fatal({ err }, "Redis is not reachable (REDIS_URL); the API cannot start without it");
+  process.exit(1);
+}
+
+// Row-level security must apply to this process: refuse a superuser or BYPASSRLS role.
+try {
+  await assertSafeDatabaseRole();
+} catch (err) {
+  logger.fatal({ err }, "Unsafe database role; the API will not start");
   process.exit(1);
 }
 
