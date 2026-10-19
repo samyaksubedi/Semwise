@@ -352,7 +352,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
   - [ ] Admin: structure, people, classes, settings
   - [ ] Admin: syllabus review (built; screenshot check pending)
   - [ ] CR entry (text, voice, photo) and teacher approvals (built; screenshot check pending)
-  - [ ] Student chat and catch-up
+  - [ ] Student chat and catch-up (built; screenshot check pending)
 - [ ] 10. Student notes
 - [ ] 11. Exams and exam scope
 - [ ] 12. Study plan

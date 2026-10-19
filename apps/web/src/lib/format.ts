@@ -1,3 +1,5 @@
+import { t } from "./strings";
+
 /**
  * Dates are shown in the college's timezone. The API sends calendar days as "YYYY-MM-DD" and
  * moments as ISO timestamps.
@@ -22,8 +24,8 @@ export function addDays(day: string, days: number): string {
 /** "Today", "Yesterday", or "Mon, 19 Oct" for a calendar day. */
 export function formatDay(day: string, today?: string, withYear = false): string {
   if (today) {
-    if (day === today) return "Today";
-    if (day === addDays(today, -1)) return "Yesterday";
+    if (day === today) return t.dates.today;
+    if (day === addDays(today, -1)) return t.dates.yesterday;
   }
   return new Intl.DateTimeFormat("en-GB", {
     weekday: "short",

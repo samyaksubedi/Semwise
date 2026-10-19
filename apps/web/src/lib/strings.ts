@@ -65,6 +65,8 @@ export const t = {
     requestId: (id: string) => `Reference: ${id}`,
   },
 
+  dates: { today: "Today", yesterday: "Yesterday" },
+
   theme: {
     label: "Theme",
     system: "System",
@@ -499,6 +501,69 @@ export const t = {
     autoApproveLocked: "Your program admin has fixed this rule.",
     useDefault: "Use the program's rule",
     override: "Override for this class",
+  },
+
+  chat: {
+    title: "Chat",
+    newChat: "New chat",
+    chats: "Chats",
+    noChats: "No chats yet.",
+    emptyTitle: "Ask about your classes",
+    emptyBody: "Answers come from your syllabus and what was taught in your section, with sources.",
+    suggestions: [
+      "What was taught today?",
+      "Explain the last topic we covered",
+      "Summarize this week's classes",
+    ],
+    placeholder: "Ask a question…",
+    send: "Send",
+    thinking: "Looking through your syllabus and classes…",
+    disclaimer: "Answers can be wrong. Check the sources under each answer.",
+    allSubjects: "All subjects",
+    pickSubject: "Ask about",
+    pickSubjectLead: "Pin a subject, or let the assistant work it out from your question.",
+    includePast: "Include my past semesters",
+    labels: {
+      FROM_SYLLABUS: "From syllabus",
+      REPORTED_IN_CLASS: "Reported in class",
+      GENERAL_EXPLANATION: "General explanation",
+      OUTSIDE_SYLLABUS: "Outside the syllabus",
+      NOT_IN_MATERIAL: "Not in class material",
+    },
+    sources: "Sources",
+    sourceSyllabus: (unitNo: number | null, unit: string | null) =>
+      `Syllabus · ${unitNo ? `Unit ${unitNo}` : ""}${unit ? `: ${unit}` : ""}`,
+    sourceClass: (day: string) => `Class · ${day}`,
+    sourceTitle: "Source",
+    syllabusVersion: (n: number) => `Official syllabus, version ${n}`,
+    classVersion: (n: number) => `Reported in class, version ${n}`,
+    unitTopic: (unit: string, topic: string | null) => (topic ? `${unit} › ${topic}` : unit),
+    outdated: "Based on content that was later corrected. Ask again for the current version.",
+    declined: "Outside what Semwise helps with",
+    quota: (used: number, limit: number) => `${used} of ${limit} questions used this month`,
+    rename: "Rename",
+    deleteChat: "Delete chat",
+    deleteTitle: "Delete this chat?",
+    deleteBody: "Only you can see your chats. Deleting removes it for good.",
+    deleted: "Chat deleted",
+    you: "You",
+    assistant: "Semwise",
+  },
+
+  catchup: {
+    title: "Catch-up",
+    lead: "What was taught in your section, day by day.",
+    days: "Days",
+    range: "Pick a range",
+    singleDay: "One day",
+    from: "From",
+    to: "To",
+    nothing: "Nothing recorded",
+    nothingBody: "No class entries for these days yet. Your CR or teacher may add them later.",
+    askFollowUp: "Ask a follow-up",
+    followUpText: (subject: string, day: string) =>
+      `Explain what was taught in ${subject} on ${day}`,
+    entries: (n: number) => (n === 1 ? "1 class" : `${n} classes`),
   },
 
   settings: {

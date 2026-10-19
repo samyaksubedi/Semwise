@@ -43,7 +43,11 @@ export function EntryStatus({ entry }: { entry: EntryView }) {
 }
 
 /** Topics with a mark for whether each is in the syllabus (text and icon, not colour alone). */
-export function TopicList({ topics }: { topics: EntryTopicView[] }) {
+export function TopicList({
+  topics,
+}: {
+  topics: Pick<EntryTopicView, "title" | "subtopics" | "inSyllabus">[];
+}) {
   return (
     <ul className="flex flex-col gap-2">
       {topics.map((topic, i) => (
