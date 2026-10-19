@@ -129,7 +129,7 @@ pnpm test
 pnpm build
 ```
 
-`pnpm test` needs the Docker services running. It uses `semwise_test` (wiped on every run), Redis database 1, and the Qdrant collection `semwise_test_chunks`. OpenAI, R2 and email are mocked; tests never make paid calls.
+`pnpm test` needs the Docker services running. It uses `semwise_test` (wiped on every run), Redis database 1, and the Qdrant collection `semwise_test_chunks`. OpenAI, R2 and email are mocked; tests never make paid calls. Rate limits are skipped in tests except in the `*.ratelimit.test.ts` files, which turn them on and empty the test Redis before each test.
 
 ### Browser tests (Playwright)
 
@@ -152,3 +152,4 @@ Flows covered: syllabus upload, a change request with one change accepted and on
 - **Port 5434, 6380, 6333, 8025 or 9000 already in use:** change the left side of the port mapping in `infra/docker-compose.dev.yml` and the matching URL in `apps/api/.env`.
 - **`Redis is not reachable` on start:** the API refuses to start without Redis. Run `pnpm db:up`.
 - **`permission denied for table ...`:** the app role is missing its grants. Recreate the Postgres volume (step 3).
+- **`Too many requests` while testing by hand:** rate-limit counters live in Redis (keys `rl:<limiter>:<key>`) for up to an hour. List them with `docker compose -f infra/docker-compose.dev.yml exec redis redis-cli -a semwise --no-auth-warning --scan --pattern "rl:*"`, and clear one limiter (here the invite one) without flushing the rest: `docker compose -f infra/docker-compose.dev.yml exec redis sh -c "redis-cli -a semwise --no-auth-warning --scan --pattern 'rl:invite-token*' | xargs -r redis-cli -a semwise --no-auth-warning DEL"`.
