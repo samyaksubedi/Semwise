@@ -19,6 +19,7 @@ ${DATA_RULE}
 Return the subject name and code if printed (else null), the credit hours if printed (else null), the units in order with their topics and subtopics, and the reference books.
 Rules:
 - Use the wording of the syllabus; do not invent topics that are not in it.
+- Titles are names only: leave out printed numbering such as "Unit 3:", "Chapter 2" or "4.1" (units are numbered by their order).
 - sourcePage is the 1-based page where the item appears (null if unknown).
 - confidence is 0 to 100: how sure you are that the item and its place in the outline are right. Use below 60 for anything guessed, garbled or ambiguous.
 - hours: teaching hours printed for a unit, else null.

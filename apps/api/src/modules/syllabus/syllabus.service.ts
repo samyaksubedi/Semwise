@@ -16,6 +16,7 @@ import {
 import type { Job } from "bullmq";
 import { transaction, type TenantScope } from "../../common/db/scope.js";
 import { AppError } from "../../common/errors/app-error.js";
+import { env } from "../../config/env.js";
 import { logger } from "../../lib/logger.js";
 import { looksScanned, pdfPages } from "../../lib/pdf.js";
 import { QueueName, enqueue } from "../../lib/queue.js";
@@ -473,6 +474,14 @@ export const syllabusService = {
       const { bytes } = await filesService.readBytes(scope, version.sourceFileId);
       const pages = await pdfPages(bytes);
       const scanned = looksScanned(pages);
+      if (scanned && pages.length > env.AI_SCAN_MAX_PAGES) {
+        // Not worth retrying: the same file fails the same way, and no AI call is made.
+        await repo.updateVersion(scope, version.id, {
+          extraction: "FAILED",
+          extractionError: `This looks like a scanned PDF of ${pages.length} pages; scans can have at most ${env.AI_SCAN_MAX_PAGES}. Upload only the syllabus pages, or a PDF with selectable text.`,
+        });
+        return { skipped: true, pages: pages.length };
+      }
       const ai = { tenantId: data.tenantId, userId: data.userId };
       // Done outside any transaction: the AI call is slow.
       const extraction = await aiService.extractSyllabus(

@@ -66,10 +66,13 @@ export const bulkAssignSchema = z.object({
 });
 export type BulkAssignInput = z.infer<typeof bulkAssignSchema>;
 
+/** Most Class Representatives one section can have at a time. */
+export const MAX_CRS_PER_SECTION = 3;
+
 export const grantCrSchema = z.object({
   studentId: idSchema,
-  /** Replace the section's current CR instead of refusing. */
-  replace: z.boolean().default(false),
+  /** A current CR of the section to replace; needed once the section has MAX_CRS_PER_SECTION. */
+  replaceStudentId: idSchema.optional(),
 });
 export type GrantCrInput = z.infer<typeof grantCrSchema>;
 

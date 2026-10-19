@@ -169,7 +169,7 @@ Rate limits count in Redis (shared by every API instance). AI routes also pass t
 - Every call writes a ledger row (tenant, user, feature, model, tokens, cost, price snapshot). Quota checks run before the call.
 - All retrieved text and user input are passed as data in clearly delimited sections, never as instructions.
 - Prices change and sources disagree, so the price table used by the ledger is stored as data and updated by hand from OpenAI's official pricing page.
-- As built: `ai.provider.ts` is an `AiProvider` interface (structured JSON through the Responses API with strict schemas, embeddings, transcription); tests install a fake. Output schemas are Zod, sent as strict JSON schema and validated again on the answer. Scanned syllabus PDFs (little text per page) are sent to the model as a PDF file instead of running local OCR, so no image tooling is needed on the server.
+- As built: `ai.provider.ts` is an `AiProvider` interface (structured JSON through the Responses API with strict schemas, embeddings, transcription); tests install a fake. Output schemas are Zod, sent as strict JSON schema and validated again on the answer. Scanned syllabus PDFs (little text per page) are sent to the model as a PDF file instead of running local OCR, so no image tooling is needed on the server; such scans are capped at `AI_SCAN_MAX_PAGES` (60). `pnpm --filter @semwise/api smoke:ai` is a manual end-to-end check against the real API (a few cents): it does nothing without `OPENAI_API_KEY`, and is never part of `pnpm test`.
 
 ### Default models and prices (October 2026)
 
@@ -281,7 +281,7 @@ Menus and routes only reflect roles; the API enforces permissions regardless of 
 
 - `REDIS_URL` (required)
 - `QDRANT_URL`, `QDRANT_API_KEY`
-- `OPENAI_API_KEY`, and model names for router, answer, deep, vision, embedding and transcription
+- `OPENAI_API_KEY`, and model names for router, answer, deep, vision, embedding and transcription; `AI_SCAN_MAX_PAGES` (longest scanned PDF sent to the model, default 60)
 - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`
 - `MAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_DAILY_CAP`, `MAIL_PER_MINUTE`
 - Default quota values and an AI budget cap

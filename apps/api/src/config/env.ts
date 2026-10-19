@@ -53,6 +53,8 @@ const envSchema = z.object({
   AI_MODEL_TRANSCRIBE: z.string().min(1).default("gpt-transcribe"),
   /** Vector size of the embedding model (text-embedding-3-small = 1536). */
   AI_EMBEDDING_DIMENSIONS: positiveInt(1536),
+  /** Longest scanned PDF sent to the model as a file (each page is read as an image). */
+  AI_SCAN_MAX_PAGES: positiveInt(60),
 
   /** Cloudflare R2 (or any S3-compatible store; MinIO locally). Unset = uploads answer 503. */
   R2_ENDPOINT: z.url().optional(),

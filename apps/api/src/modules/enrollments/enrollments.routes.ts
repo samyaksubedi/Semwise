@@ -23,4 +23,4 @@ studentsRouter.put("/:id/enrollments/:semesterId", c.assignSection);
 /** Mounted at /v1/sections, next to the structure routes. */
 export const sectionCrRouter: Router = Router();
 sectionCrRouter.post("/:id/cr", c.grantCr);
-sectionCrRouter.delete("/:id/cr", c.removeCr);
+sectionCrRouter.delete("/:id/cr/:studentId", c.removeCr);

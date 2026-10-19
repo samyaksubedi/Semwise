@@ -78,7 +78,7 @@ export const enrollmentsController = {
     sendData(res, await service.grantCr(getActor(req), param(req, "id"), input));
   },
   async removeCr(req: Request, res: Response) {
-    await service.removeCr(getActor(req), param(req, "id"));
+    await service.removeCr(getActor(req), param(req, "id"), param(req, "studentId"));
     res.status(204).end();
   },
 };

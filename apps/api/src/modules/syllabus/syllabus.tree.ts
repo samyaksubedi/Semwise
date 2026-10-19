@@ -14,11 +14,18 @@ export function childKind(parent: TopicKind | null): TopicKind | null {
   return null;
 }
 
+const UNIT_LABEL = /^\s*(unit|chapter|module)\s*[0-9ivx]+\s*[:.\-–]?\s*/i;
+
+/** A unit title without its printed label ("Unit 3: Trees" is "Trees"); units are numbered by position. */
+export function withoutUnitLabel(title: string): string {
+  return title.replace(UNIT_LABEL, "").trim() || title.trim();
+}
+
 /** Lowercase, without numbering ("Unit 3:", "2.1") and punctuation, for matching across versions. */
 export function normaliseTitle(title: string): string {
   return title
     .toLowerCase()
-    .replace(/^\s*(unit|chapter|module)\s*[0-9ivx]+\s*[:.\-–]?\s*/i, "")
+    .replace(UNIT_LABEL, "")
     .replace(/^\s*[0-9]+(\.[0-9]+)*\s*[:.)\-–]?\s*/, "")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
@@ -79,7 +86,7 @@ export function rowsFromExtraction(
       parentId: null,
       stableKey: keyFor("UNIT", unit.title),
       kind: "UNIT",
-      title: unit.title,
+      title: withoutUnitLabel(unit.title),
       description: unit.description,
       hours: unit.hours,
       orderIndex: u,

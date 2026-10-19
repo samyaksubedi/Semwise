@@ -118,7 +118,7 @@ Further rules:
 ### Approval workflow
 
 - Content is approved by the **subject teacher** of that class.
-- **Auto-approval switch:** the Program Admin sets a program-level default (on or off). Each subject teacher can override it for their own class. The Program Admin can lock the setting so teachers cannot turn auto-approval on.
+- **Auto-approval switch:** the Program Admin sets a program-level default (on or off). Each subject teacher can override it for their own class. The Program Admin can lock the setting so teachers cannot change it in either direction. With no setting at all, entries wait for the teacher.
 - Teacher and admin entries are trusted and skip approval.
 - Pending entries are hidden from students.
 - **Edits to published entries:** with auto-approval off, an edit needs approval again, and the old approved version stays visible until then. With auto-approval on, edits publish immediately, version history is kept and the teacher is notified. Minor fixes (spelling, formatting) that do not change topics are exempt.
@@ -250,14 +250,17 @@ Combined classes and shared labs; student voice, photo or file uploads; student-
 
 - **Tenant isolation:** explicit tenant scoping in every query, plus Postgres row-level security as a second line of defence, plus Qdrant filters and a shared isolation test suite.
 - **Semester** belongs to one batch; no reusable semester definitions. Subjects and syllabi are per batch semester.
-- **Defaults (all configurable):** approval reminders at 24 and 48 hours; escalation to the Program Admin at 72 hours; optional "not reviewed by teacher" publishing after 7 days, off by default; email cap 400 per day and 20 per minute; student quota 60 chat questions per month with a warning at 80%; study-room quota 100 graded answers per month; CR quota 60 voice dictations per month. Tenant budgets come from the plan.
+- **Defaults (all configurable):** approval reminders at 24 and 48 hours; escalation to the Program Admin at 72 hours; optional "not reviewed by teacher" publishing after 7 days, off by default; email cap 400 per day and 20 per minute; student quota 60 chat questions per month with a warning at 80%; study-room quota 100 graded answers per month; CR quota 60 voice dictations per month. Tenant budgets come from the plan. Quotas and budgets reset on the calendar month in UTC (a later improvement: the college's own month in its timezone).
+- **CRs:** up to three per section (a constant); a fourth needs the admin to pick a CR to replace.
+- **Scanned syllabi** are sent to the model as a PDF (no OCR tooling on the server), at most 60 pages (configurable), and metered like every AI call.
+- **Local storage:** SeaweedFS's S3 gateway stands in for R2 locally (MinIO no longer ships public images).
 - **Historical semesters:** chat defaults to the active semester; a student can switch on "include my past semesters" for semesters they were enrolled in.
 - **Retention (proposed, pending legal review):** raw audio deleted right after transcription; photos deleted 30 days after the entry is published; syllabus PDFs and entry versions kept for the life of the college; student private data (chat, notes, attempts, mastery) kept until the student deletes it, and deleted 90 days after the student leaves the college; AI usage and audit records kept 24 months; when a college ends its contract, data is exported and then deleted within 60 days.
 - **Pricing structure (proposal, the business decision stays with the founder):** a monthly minimum fee per college to cover fixed costs, plus a per-student price, with plan tiers that set quotas. AI cost alone is roughly $0.2 to $0.9 per student per month, so the per-student price must sit well above that.
 
 ### Still open
 
-- Confirm model names, vision support and prices against OpenAI's official pricing page; benchmark transcription models on real CR clips.
+- Confirm prices against OpenAI's official pricing page; benchmark transcription models on real CR clips. (Model names, PDF input and strict JSON output were confirmed with the real API on 2026-10-19 by `pnpm --filter @semwise/api smoke:ai`.)
 - Legal review of provider terms and of the retention defaults.
 - Final prices and plan tiers.
 - The exact database schema (written when feature 1 starts, from data-model.md).

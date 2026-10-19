@@ -1,6 +1,7 @@
 import {
   ErrorCode,
   IMPORT_COLUMNS,
+  MAX_CRS_PER_SECTION,
   MAX_IMPORT_ROWS,
   addStudentSchema,
   parseCsv,
@@ -676,15 +677,25 @@ export const enrollmentsService = {
     );
     if (!inSection) throw AppError.invalidState("The student is not in this section");
     const userId = student.userId;
+    let replaced: string | null = null;
+    if (input.replaceStudentId) {
+      const old = await repo.findStudent(scope, input.replaceStudentId);
+      if (!old?.userId) throw AppError.notFound("The CR to replace was not found");
+      replaced = old.userId;
+    }
     await transaction(scope, async () => {
       const current = await membershipsService.holders(scope, "CR", { sectionId: section.id });
-      const others = current.filter((id) => id !== userId);
-      if (others.length && !input.replace) {
-        throw AppError.conflict(ErrorCode.CONFLICT, "This section already has a CR. Replace them?");
+      if (current.includes(userId)) return;
+      if (replaced && !current.includes(replaced))
+        throw AppError.invalidState("That student is not a CR of this section");
+      if (!replaced && current.length >= MAX_CRS_PER_SECTION) {
+        throw AppError.conflict(
+          ErrorCode.CONFLICT,
+          `This section already has ${MAX_CRS_PER_SECTION} CRs. Choose one to replace.`,
+        );
       }
-      for (const other of others) {
-        await membershipsService.revoke(scope, other, "CR", { sectionId: section.id });
-      }
+      if (replaced)
+        await membershipsService.revoke(scope, replaced, "CR", { sectionId: section.id });
       await membershipsService.ensureRole(scope, userId, "CR", actor.userId, {
         sectionId: section.id,
       });
@@ -695,22 +706,23 @@ export const enrollmentsService = {
         action: "cr.grant",
         entityType: "Section",
         entityId: section.id,
-        before: others.length ? { userIds: others } : null,
+        before: replaced ? { replacedUserId: replaced } : null,
         after: { userId },
       });
     });
     return { sectionId: section.id, userId };
   },
 
-  async removeCr(actor: Actor, sectionId: string) {
+  /** Ends one student's CR role in the section; the section's other CRs keep theirs. */
+  async removeCr(actor: Actor, sectionId: string, studentId: string) {
     const section = await loadSection(actor, sectionId, Action.CR_MANAGE);
     const scope = scopeOf(actor);
+    const student = await repo.findStudent(scope, studentId);
     await transaction(scope, async () => {
       const current = await membershipsService.holders(scope, "CR", { sectionId: section.id });
-      if (current.length === 0) throw AppError.notFound("This section has no CR");
-      for (const userId of current) {
-        await membershipsService.revoke(scope, userId, "CR", { sectionId: section.id });
-      }
+      if (!student?.userId || !current.includes(student.userId))
+        throw AppError.notFound("That student is not a CR of this section");
+      await membershipsService.revoke(scope, student.userId, "CR", { sectionId: section.id });
       await auditService.record({
         tenantId: scope.tenantId,
         programId: section.programId,
@@ -718,7 +730,7 @@ export const enrollmentsService = {
         action: "cr.remove",
         entityType: "Section",
         entityId: section.id,
-        before: { userIds: current },
+        before: { userId: student.userId },
         after: null,
       });
     });

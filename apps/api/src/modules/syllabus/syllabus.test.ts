@@ -117,6 +117,33 @@ describe("upload and extraction", () => {
     expect(version.usedOcr).toBe(true);
     const parts = ai.jsonCalls("syllabus_outline")[0]!.request!.input;
     expect(parts.some((p) => p.type === "file")).toBe(true);
+    // The scan is metered like any other call: checked against the budget, then in the ledger.
+    const usage = await withTenant(a.tenantId, (db) => db.aiUsage.findMany());
+    expect(usage).toEqual([expect.objectContaining({ feature: "SYLLABUS_EXTRACT" })]);
+  });
+
+  it("refuses a scan longer than the page cap without calling the AI", async () => {
+    ai.respond("syllabus_outline", sampleOutline());
+    const scan = makePdf(Array.from({ length: 61 }, () => ["x"]));
+    const fileId = await uploadPdf(pa, storage, { subjectId: a.subjects.prog }, scan);
+    const draft = await pa.post(`/v1/subjects/${a.subjects.prog}/syllabus/drafts`).send({ fileId });
+    await drainQueue("ai");
+    const version = (await pa.get(`/v1/syllabus/versions/${draft.body.data.id}`)).body.data;
+    expect(version.extraction).toBe("FAILED");
+    expect(version.extractionError).toMatch(/61 pages; scans can have at most 60/);
+    expect(ai.jsonCalls("syllabus_outline")).toHaveLength(0);
+  });
+
+  it("drops printed unit labels from unit titles", async () => {
+    const outline = sampleOutline();
+    outline.units[0]!.title = "Unit 1: Introduction";
+    outline.units[1]!.title = "UNIT II - Pointers";
+    ai.respond("syllabus_outline", outline);
+    const fileId = await uploadPdf(pa, storage, { subjectId: a.subjects.prog });
+    const draft = await pa.post(`/v1/subjects/${a.subjects.prog}/syllabus/drafts`).send({ fileId });
+    await drainQueue("ai");
+    const version = (await pa.get(`/v1/syllabus/versions/${draft.body.data.id}`)).body.data;
+    expect(version.topics.map((u: Node) => u.title)).toEqual(["Introduction", "Pointers"]);
   });
 
   it("records a failed reading and lets the admin retry", async () => {

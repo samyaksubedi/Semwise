@@ -1,3 +1,4 @@
+import { MAX_CRS_PER_SECTION } from "@semwise/shared";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../../app.js";
 import { withSystem } from "../../common/db/scope.js";
@@ -272,44 +273,86 @@ describe("sections over semesters", () => {
 });
 
 describe("Class Representatives", () => {
-  it("one joined student of the section; replacing needs to be explicit; moving away ends it", async () => {
+  const isCr = async (s: Agent) =>
+    ((await s.get("/v1/auth/me")).body.data.roles as { role: string }[]).some(
+      (r) => r.role === "CR",
+    );
+
+  it("a joined student of the section; up to the limit, then only an explicit replace", async () => {
+    const pa = await as(a.users.pa1);
+    const students = [];
+    for (let i = 1; i <= MAX_CRS_PER_SECTION + 1; i++) {
+      students.push(await addStudent(pa, `s${i}@x.np`, `BIT-00${i}`));
+    }
+    const outsider = await addStudent(pa, "hari@x.np", "BIT-099", a.sections.b);
+    const grant = (body: object) => pa.post(`/v1/sections/${a.sections.a}/cr`).send(body);
+
+    expect((await grant({ studentId: students[0]!.id })).status).toBe(409); // not joined yet
+    const logins = [];
+    for (let i = 1; i <= MAX_CRS_PER_SECTION + 1; i++) logins.push(await join(`s${i}@x.np`));
+    await join("hari@x.np");
+    expect((await grant({ studentId: outsider.id })).status).toBe(409); // another section
+
+    for (let i = 0; i < MAX_CRS_PER_SECTION; i++) {
+      expect((await grant({ studentId: students[i]!.id })).status).toBe(200);
+    }
+    // Granting again is a no-op, not a second slot.
+    expect((await grant({ studentId: students[0]!.id })).status).toBe(200);
+    for (let i = 0; i < MAX_CRS_PER_SECTION; i++) expect(await isCr(logins[i]!)).toBe(true);
+    const roles = (await logins[0]!.get("/v1/auth/me")).body.data.roles;
+    expect(roles).toContainEqual({ role: "CR", programId: null, sectionId: a.sections.a });
+
+    const extra = students[MAX_CRS_PER_SECTION]!;
+    const full = await grant({ studentId: extra.id });
+    expect(full.status).toBe(409);
+    expect(full.body.error.message).toMatch(/already has 3 CRs/);
+    // The CR to replace must be a CR of this section.
+    expect((await grant({ studentId: extra.id, replaceStudentId: outsider.id })).status).toBe(409);
+    const replaced = await grant({ studentId: extra.id, replaceStudentId: students[0]!.id });
+    expect(replaced.status).toBe(200);
+    expect(await isCr(logins[0]!)).toBe(false);
+    expect(await isCr(logins[MAX_CRS_PER_SECTION]!)).toBe(true);
+    expect(await isCr(logins[1]!)).toBe(true);
+  });
+
+  it("removes one CR at a time, and moving to another section ends the role", async () => {
     const pa = await as(a.users.pa1);
     const ram = await addStudent(pa, "ram@x.np", "BIT-001");
     const sita = await addStudent(pa, "sita@x.np", "BIT-002");
-    const outsider = await addStudent(pa, "hari@x.np", "BIT-003", a.sections.b);
-
-    const notJoined = await pa.post(`/v1/sections/${a.sections.a}/cr`).send({ studentId: ram.id });
-    expect(notJoined.status).toBe(409);
-
     const ramAgent = await join("ram@x.np");
-    await join("sita@x.np");
-    await join("hari@x.np");
-    expect(
-      (await pa.post(`/v1/sections/${a.sections.a}/cr`).send({ studentId: outsider.id })).status,
-    ).toBe(409);
-    expect(
-      (await pa.post(`/v1/sections/${a.sections.a}/cr`).send({ studentId: ram.id })).status,
-    ).toBe(200);
-    const roles = (await ramAgent.get("/v1/auth/me")).body.data.roles;
-    expect(roles).toContainEqual({ role: "CR", programId: null, sectionId: a.sections.a });
+    const sitaAgent = await join("sita@x.np");
+    await pa.post(`/v1/sections/${a.sections.a}/cr`).send({ studentId: ram.id });
+    await pa.post(`/v1/sections/${a.sections.a}/cr`).send({ studentId: sita.id });
+    const list = async () =>
+      (await pa.get(`/v1/semesters/${a.semester}/students`)).body.data
+        .filter((s: { isCr: boolean }) => s.isCr)
+        .map((s: { id: string }) => s.id)
+        .sort();
+    expect(await list()).toEqual([ram.id, sita.id].sort());
 
-    const second = await pa.post(`/v1/sections/${a.sections.a}/cr`).send({ studentId: sita.id });
-    expect(second.status).toBe(409);
-    const replaced = await pa
-      .post(`/v1/sections/${a.sections.a}/cr`)
-      .send({ studentId: sita.id, replace: true });
-    expect(replaced.status).toBe(200);
-    expect((await ramAgent.get("/v1/auth/me")).body.data.roles).not.toContainEqual(
-      expect.objectContaining({ role: "CR" }),
-    );
+    expect((await pa.delete(`/v1/sections/${a.sections.a}/cr/${ram.id}`)).status).toBe(204);
+    expect(await isCr(ramAgent)).toBe(false);
+    expect(await isCr(sitaAgent)).toBe(true);
+    expect((await pa.delete(`/v1/sections/${a.sections.a}/cr/${ram.id}`)).status).toBe(404);
 
     // Sita moves to section B: she is no longer A's CR.
     await pa
       .put(`/v1/students/${sita.id}/enrollments/${a.semester}`)
       .send({ sectionId: a.sections.b });
-    const list = await pa.get(`/v1/semesters/${a.semester}/students`);
-    expect(list.body.data.filter((s: { isCr: boolean }) => s.isCr)).toEqual([]);
-    expect((await pa.delete(`/v1/sections/${a.sections.a}/cr`)).status).toBe(404);
+    expect(await list()).toEqual([]);
+  });
+
+  it("is denied to the other program's admin and to another college", async () => {
+    const pa = await as(a.users.pa1);
+    const ram = await addStudent(pa, "ram@x.np", "BIT-001");
+    await join("ram@x.np");
+    const pa2 = await as(a.users.pa2);
+    expectDenied(await pa2.post(`/v1/sections/${a.sections.a}/cr`).send({ studentId: ram.id }));
+    const other = await as(b.users.pa1);
+    expectDenied(await other.post(`/v1/sections/${a.sections.a}/cr`).send({ studentId: ram.id }));
+    expectDenied(await other.post(`/v1/sections/${b.sections.a}/cr`).send({ studentId: ram.id }));
+    await pa.post(`/v1/sections/${a.sections.a}/cr`).send({ studentId: ram.id });
+    expectDenied(await other.delete(`/v1/sections/${a.sections.a}/cr/${ram.id}`));
   });
 });
 
