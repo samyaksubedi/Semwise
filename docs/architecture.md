@@ -349,10 +349,10 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 - [x] 9. Catch-up
 - Web phase A (screens for features 1 to 9):
   - [x] Shell, design tokens, UI kit, sign-in, invites, password reset, profile
-  - [ ] Admin: structure, people, classes, settings
-  - [ ] Admin: syllabus review (built; screenshot check pending)
-  - [ ] CR entry (text, voice, photo) and teacher approvals (built; screenshot check pending)
-  - [ ] Student chat and catch-up (built; screenshot check pending)
+  - [x] Admin: structure, people, classes, settings
+  - [x] Admin: syllabus review
+  - [x] CR entry (text, voice, photo) and teacher approvals
+  - [x] Student chat and catch-up
 - [ ] 10. Student notes
 - [ ] 11. Exams and exam scope
 - [ ] 12. Study plan

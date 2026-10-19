@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "quietDanger";
 type Size = "md" | "sm";
 
 const base =
@@ -14,6 +14,8 @@ const variants: Record<Variant, string> = {
     "bg-surface text-text border border-border hover:border-border-strong hover:bg-surface-2",
   ghost: "text-text hover:bg-surface-2",
   danger: "bg-danger text-white hover:opacity-90",
+  /** A destructive action that opens a confirmation (it is not the main action on the page). */
+  quietDanger: "text-danger hover:bg-danger-soft",
 };
 
 // md is 44 px tall: the touch target on phones.

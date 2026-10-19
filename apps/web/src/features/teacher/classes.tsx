@@ -130,7 +130,7 @@ export function TeacherClassPage({ id }: { id: string }) {
           <p className="text-muted">{t.teacher.noClassEntries}</p>
         ) : (
           <ul className="flex flex-col gap-3">
-            {[...entries.data].reverse().map((e) => {
+            {entries.data.map((e) => {
               const version = e.live ?? e.latest;
               return (
                 <li key={e.id}>

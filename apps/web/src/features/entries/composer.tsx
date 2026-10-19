@@ -203,9 +203,7 @@ export function EntryComposer({
       <Card className="flex flex-col items-start gap-3 p-5">
         <p className="text-lg font-semibold">{sent.subject.name}</p>
         <EntryStatus entry={sent} />
-        {sent.latest?.status === "PENDING" && (
-          <p className="text-muted">{t.teacher.approvalsLead}</p>
-        )}
+        {sent.latest?.status === "PENDING" && <p className="text-muted">{t.entry.waitingNote}</p>}
         <Button onClick={reset}>{t.entry.newEntry}</Button>
       </Card>
     );

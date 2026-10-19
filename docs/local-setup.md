@@ -89,6 +89,8 @@ node scripts/screens.mjs ./shots anon:/login student:/chat,/catchup program:/adm
 
 It saves each page at 360, 768 and 1280 px in light and dark, and lists any page that scrolls sideways at 360 px.
 
+On a laptop with little memory, take screenshots against production builds instead of the dev servers, one heavy process at a time: `pnpm build`, then `node --env-file=.env dist/server.js` in apps/api and `npx next start --port 3000` in apps/web (add `node --env-file=.env dist/worker.js` only when a flow needs jobs, such as organizing an entry), take the shots in one batch, then stop them all.
+
 Check: http://localhost:4000/v1/health/ready should report `database`, `redis` and `qdrant` as `ok`.
 
 ## 8. Try it

@@ -605,7 +605,7 @@ function StudentSheet({
 
         {student.status !== "DEACTIVATED" && (
           <div className="border-t border-border pt-4">
-            <Button variant="ghost" className="text-danger" onClick={() => setConfirming(true)}>
+            <Button variant="quietDanger" onClick={() => setConfirming(true)}>
               {t.people.deactivate}
             </Button>
           </div>

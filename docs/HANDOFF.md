@@ -1,6 +1,6 @@
 # Handoff
 
-Updated 2026-10-19, after backend phase A (features 0 to 9). Start a new session with the build prompt ([build-prompt.md](build-prompt.md)); it resumes from the checklist in [architecture.md](architecture.md) and this file.
+Updated 2026-10-19, after backend phase A (features 0 to 9) and web phase A. Start a new session with the build prompt ([build-prompt.md](build-prompt.md)); it resumes from the checklist in [architecture.md](architecture.md) and this file.
 
 ## Done (backend, all committed on `main`)
 
@@ -42,15 +42,41 @@ Confirmed working: all six configured model names, strict JSON output, PDF file 
 7. A real `OPENAI_API_KEY` is in `apps/api/.env` (git-ignored; never print, log or commit it).
 8. (New) Chat answers are produced inside the request, not as a job; streaming is a later improvement.
 
-## Web phase A (in progress)
+## Web phase A (done; see "Not verified" below)
 
-Done and committed: `feat(web): shell, ...` (tokens, UI kit in `components/ui`, API client, session, role areas, sign-in, invites, password reset, profile; checked at 360/768/1280 in light and dark) and `feat(web): admin overview, structure, students, classes and settings` (**not yet screenshot-checked**: the dev servers were stopped for low memory).
+| Checkpoint                                                              | Commit                                                                                |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| (a) Shell, tokens, UI kit, sign-in, invites, password reset, profile    | `feat(web): shell, design tokens, UI kit, sign-in and profile`                        |
+| (b) Admin overview, structure, students and teachers, classes, settings | `feat(web): admin overview, structure, students, classes and settings`                |
+| (c) Admin syllabus review                                               | `feat(web): admin syllabus review`                                                    |
+| (d) CR Today, My entries, teacher approvals and My classes              | `feat(web): CR entry with voice and photo, my entries, teacher approvals and classes` |
+| (e) Student chat and catch-up                                           | `feat(web): student chat and catch-up`                                                |
+| Fixes from the screenshot check                                         | `fix(web): issues found in the screenshot check`                                      |
 
-Next, in order: (c) admin syllabus review, (d) CR entry with voice and photo plus teacher approvals and "My classes", (e) student chat and catch-up. Then screenshot-check (b) to (e), and tick the web checklist in architecture.md.
+Patterns borrowed (looked up before each checkpoint): per-change accept/reject with before/after and accept all (AI UX Playground, Revise); approvals with fixed approve/reject buttons, no confirm on approve, an inline one-line reject reason, and bulk kept behind an explicit Select mode (FinalApproval); record then edit the transcript (Apple Notes); source chips beside the claim with meaningful labels and a plain disclaimer near the input (NN/g on explainable AI); 2 to 4 suggestion chips that fill the box (AI UX Playground); a swipeable recent-days strip (Material date pickers).
 
-How to check screens: `pnpm --filter @semwise/api seed:demo`, run `pnpm dev`, then `node apps/web/scripts/screens.mjs <dir> program:/admin,/admin/structure,/admin/students,/admin/classes,/admin/settings` (see local-setup.md). It flags sideways scroll at 360 px.
+### Verified, and how (2026-10-19)
 
-Web conventions: client components fetch with TanStack Query (`features/admin/queries.ts` has the keys); forms in sheets use `FormSheet`; API field errors come from `ApiError.field(path)`; all copy goes in `src/lib/strings.ts`; show the API's own message for 409s (it is already specific).
+- `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm build` pass; `pnpm test`: 212 API, 15 web, 4 shared tests.
+- Screenshots against production builds (compiled API, `next start`) with the demo college (`seed:demo`): 19 pages for 5 roles (University Admin, Program Admin, CR, teacher, student) at 360, 768 and 1280 px in light and dark, 120 images. No sideways scroll at 360 px and no page errors. I looked at a sample of the images (mostly 360 px, some 768 and 1280, both themes), not every one.
+- Interactions in a real headless browser at 360 px: the CR flow end to end (a board photo uploaded through the signed URL to local storage, read by the vision model, the text edited, organized by the worker, the "replace or add" prompt, sent, the status chip); teacher approvals with the count badge and the inline reject reason; the chat source sheet; a student's action sheet; the CSV import preview with per-row errors. One real chat question was asked through the API and its answer (labels, [S1] chips, general explanation) renders correctly.
+- Fixed from the check: the college timezone showed "Africa/Abidjan" (browsers list Asia/Kathmandu as Asia/Katmandu, so the stored value was not an option); a teacher's class entries were oldest first; CR-facing copy after sending showed the teacher's text; destructive buttons were not red; the draft header did not name the subject; a cut-off search placeholder; a wrapping "Photo of the board" button.
+
+### Not verified (known gaps; please re-check)
+
+- **Microphone recording** was not exercised in a browser (headless has no microphone). The recorder code (MediaRecorder, 2 minute cap, webm or Safari mp4) is untested in a real browser; the transcription path itself was checked through the API with the smoke script.
+- These screens were rendered but their actions not exercised in the browser: syllabus PDF upload and extraction, change requests (propose and apply) and publishing; creating programs, batches, semesters, sections and subjects; adding a student, granting or replacing a CR, moving and deactivating; inviting teachers and program admins; creating classes and changing teachers; saving settings; editing a published entry and withdrawing; teacher "add an entry"; asking from the chat box, the subject picker, deleting a chat, the quota meter; catch-up range mode and the follow-up link. Each calls an API that has its own tests.
+- No keyboard-only run of the main flows yet (ui-ux.md asks for one), and no screen-reader check.
+- **The Super Admin area is not built**: `/platform/colleges` is in the navigation but has no page, so a Super Admin lands on "not found". It was not in the phase A screen list.
+- The invite progress card shows "0 of 3 sent" for the seeded invites: the seed creates invites without the email log the counts read. Real invites are counted.
+- Web tests are unit tests (navigation, API client, upload types, entry status, answer rendering); there are no component or end-to-end tests in the repo. The interaction checks above were throwaway scripts, not committed.
+
+### Next
+
+1. Fill the gaps above that matter for a pilot: a real-phone check of recording (Android Chrome and iOS Safari), a keyboard run, the Super Admin colleges page.
+2. Backend phase B (features 10 to 16), each followed by its screens.
+
+Web conventions: client components fetch with TanStack Query (`features/admin/queries.ts`, `features/entries/shared.tsx` hold keys); forms in sheets use `FormSheet`; field errors come from `ApiError.field(path)`; every user-facing string is in `src/lib/strings.ts`; show the API's own message for 409s (it is already specific); uploads go through `lib/upload.ts`. To check screens on a low-memory machine, see local-setup.md ("Screenshots").
 
 ## Conventions and gotchas
 

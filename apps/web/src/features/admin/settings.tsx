@@ -120,7 +120,12 @@ function CollegeCard() {
   const client = useQueryClient();
   const toast = useToast();
   const college = useQuery({ queryKey: keys.college, queryFn: () => api<TenantView>("/college") });
-  const zones = useMemo(() => Intl.supportedValuesOf("timeZone"), []);
+  // Browsers list some zones under older names (Asia/Katmandu): keep the college's own value.
+  const current = college.data?.timezone;
+  const zones = useMemo(() => {
+    const list = Intl.supportedValuesOf("timeZone");
+    return current && !list.includes(current) ? [...list, current].sort() : list;
+  }, [current]);
   const [name, setName] = useState<string | null>(null);
   const [zone, setZone] = useState<string | null>(null);
   const save = useMutation({

@@ -5,6 +5,7 @@ import {
   type ChangeRequestView,
   type ProposedOp,
   type SyllabusStatusRow,
+  type SubjectView,
   type SyllabusVersionView,
   type TopicKind,
   type TopicNode,
@@ -112,6 +113,12 @@ export function VersionPage({ id }: { id: string }) {
       router.replace("/admin/syllabus");
     },
   });
+  const subjectId = version.data?.subjectId;
+  const subject = useQuery({
+    queryKey: ["subject", subjectId],
+    queryFn: () => api<SubjectView>(`/subjects/${subjectId}`),
+    enabled: Boolean(subjectId),
+  });
   const retry = useMutation({
     mutationFn: () =>
       api<SyllabusVersionView>(`/syllabus/versions/${id}/retry`, { method: "POST" }),
@@ -136,7 +143,13 @@ export function VersionPage({ id }: { id: string }) {
     <div className="flex flex-col gap-5">
       <PageHeader
         back={<BackToList />}
-        title={v.suggestedName && !v.subjectId ? v.suggestedName : t.syllabus.version(v.versionNo)}
+        title={
+          subject.data
+            ? t.syllabus.subjectVersion(subject.data.name, v.versionNo)
+            : v.suggestedName && !v.subjectId
+              ? v.suggestedName
+              : t.syllabus.version(v.versionNo)
+        }
         lead={
           <span className="flex flex-wrap items-center gap-2">
             <VersionStatus version={v} />
@@ -340,6 +353,10 @@ export function SubjectSyllabusPage({ subjectId }: { subjectId: string }) {
       }),
     onSuccess: (v) => router.push(`/admin/syllabus/versions/${v.id}`),
   });
+  const subject = useQuery({
+    queryKey: ["subject", subjectId],
+    queryFn: () => api<SubjectView>(`/subjects/${subjectId}`),
+  });
   const open = versions.data?.find((x) => x.status === "DRAFT" || x.status === "PUBLISHING");
 
   if (live.error) return <ErrorState error={live.error} onRetry={() => void live.refetch()} />;
@@ -349,7 +366,11 @@ export function SubjectSyllabusPage({ subjectId }: { subjectId: string }) {
     <div className="flex flex-col gap-5">
       <PageHeader
         back={<BackToList />}
-        title={t.syllabus.version(v.versionNo)}
+        title={
+          subject.data
+            ? t.syllabus.subjectVersion(subject.data.name, v.versionNo)
+            : t.syllabus.version(v.versionNo)
+        }
         lead={
           <span className="flex flex-wrap items-center gap-2">
             <VersionStatus version={v} />
@@ -679,12 +700,7 @@ function NodeSheet({
             </Button>
           )}
           {editable && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-danger"
-              onClick={() => setDeleting(true)}
-            >
+            <Button size="sm" variant="quietDanger" onClick={() => setDeleting(true)}>
               {t.common.delete}
             </Button>
           )}
