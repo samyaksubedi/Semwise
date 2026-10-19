@@ -75,8 +75,8 @@ Resolution of auto-approval: a class setting overrides the program default, unle
 
 | Table          | Key fields                                                                                                        |
 | -------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `Conversation` | tenantId, userId, title, pinnedSubjectId?, summary                                                                |
-| `Message`      | conversationId, role, content, citations (json), labels (json), model, usageId                                    |
+| `Conversation` | tenantId, userId, title, pinnedSubjectId?, includePast, summary, summarizedCount                                  |
+| `Message`      | conversationId, role, content, scope, language, citations (json), labels (json), model, requestId (ledger rows)   |
 | `Note`         | tenantId, userId, subjectId?, topicStableKey?, sessionId?, body, source (MANUAL, AI_ANSWER), state (INBOX, FILED) |
 | `NoteCheck`    | noteId, result (json), createdAt                                                                                  |
 

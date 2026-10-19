@@ -119,6 +119,20 @@ export const sessionsRepository = {
     );
   },
 
+  /** Entries whose live version is one of these and that are not taken down. */
+  listByLiveVersions(scope: TenantScope, versionIds: string[]) {
+    return withTenant(scope.tenantId, (db) =>
+      db.entry.findMany({
+        where: {
+          tenantId: scope.tenantId,
+          currentVersionId: { in: versionIds },
+          takenDownAt: null,
+        },
+        include: { currentVersion: { select: { versionNo: true } } },
+      }),
+    );
+  },
+
   listByAuthor(scope: TenantScope, authorId: string) {
     return withTenant(scope.tenantId, (db) =>
       db.entry.findMany({

@@ -75,6 +75,16 @@ export const syllabusRepository = {
   },
 
   /** Every syllabus of a semester with its versions' status (the dashboard). */
+  /** Syllabi whose live version is one of these (the rest were superseded). */
+  listByCurrentVersions(scope: TenantScope, versionIds: string[]) {
+    return withTenant(scope.tenantId, (db) =>
+      db.syllabus.findMany({
+        where: { tenantId: scope.tenantId, currentVersionId: { in: versionIds } },
+        select: { currentVersionId: true },
+      }),
+    );
+  },
+
   listForSemesters(scope: TenantScope, semesterIds: string[]) {
     return withTenant(scope.tenantId, (db) =>
       db.syllabus.findMany({

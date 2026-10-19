@@ -101,6 +101,38 @@ export const entryOrganizeSchema = z.strictObject({
 });
 export type EntryOrganized = z.infer<typeof entryOrganizeSchema>;
 
+export const chatRouteSchema = z.strictObject({
+  /** The language of the question, in English ("English", "Nepali", "Romanized Nepali" ...). */
+  language: z.string().min(1).max(40),
+  /** The question rewritten in English as a standalone search query. */
+  query: z.string().max(500),
+  /** Keys of the subjects (S1, S2 ...) the question is about; two when it is ambiguous. */
+  subjectKeys: z.array(z.string().max(10)).max(3),
+  scope: z.enum(["IN_SYLLABUS", "RELATED", "UNRELATED"]),
+  /** Multi-step reasoning, a derivation, or code: goes to the stronger model. */
+  complex: z.boolean(),
+  /** "What was taught today / on Monday": a date range in the college's calendar (feature 9). */
+  dates: z.strictObject({
+    isDateQuestion: z.boolean(),
+    from: z.string().max(10).nullable(),
+    to: z.string().max(10).nullable(),
+  }),
+});
+export type ChatRoute = z.infer<typeof chatRouteSchema>;
+
+export const chatAnswerSchema = z.strictObject({
+  answer: z.string().min(1).max(8000),
+  /** Keys of the sources (S1 ...) the answer actually uses. */
+  sourceKeys: z.array(z.string().max(10)).max(12),
+  /** The answer explains beyond what the sources say. */
+  generalExplanation: z.boolean(),
+  /** The sources do not answer the question. */
+  notInMaterial: z.boolean(),
+});
+export type ChatAnswer = z.infer<typeof chatAnswerSchema>;
+
+export const chatSummarySchema = z.strictObject({ summary: z.string().max(3000) });
+
 export const photoReadingSchema = z.strictObject({
   text: z.string().max(8000),
   unreadable: z.boolean(),

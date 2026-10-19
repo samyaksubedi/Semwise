@@ -7,7 +7,8 @@
  * publish job with embeddings), creates and publishes one class entry, and prints the outline,
  * how the entry was organized and mapped, and the cost written to the usage ledger. It also sends
  * a one-page PDF with almost no text layer, which takes the scanned path (the PDF itself goes to
- * the model), then has the CR transcribe a short spoken clip and read a whiteboard photo.
+ * the model), has the CR transcribe a short spoken clip and read a whiteboard photo, and asks
+ * two chat questions as a student.
  * Without OPENAI_API_KEY it does nothing. Never run by `pnpm test`.
  *
  * Jobs run in-process under their own queue prefix, so a running dev worker does not take them.
@@ -367,8 +368,50 @@ async function main() {
   if (photo.status !== "DONE") throw new Error(`Photo reading ${photo.status}: ${photo.error}`);
   console.log();
 
+  // ---------- Student Q&A ----------
+  console.log("6. Student questions (the CR is also a student of the section)");
+  const chat = ok(await crAgent.post("/v1/chat/conversations").send({}), 201, "new chat") as {
+    id: string;
+  };
+  for (const q of [
+    "How do I convert an infix expression to postfix? Did we do examples in class?",
+    "Write me a poem about the monsoon.",
+  ]) {
+    const res = ok(
+      await crAgent.post(`/v1/chat/conversations/${chat.id}/messages`).send({ text: q }),
+      200,
+      "ask",
+    ) as {
+      answer: {
+        content: string;
+        scope: string;
+        labels: string[];
+        citations: {
+          kind: string;
+          unitNo: number | null;
+          unitTitle: string | null;
+          topicTitle: string | null;
+          taughtOn: string | null;
+        }[];
+      };
+      quota: { used: number; limit: number | null };
+    };
+    const a = res.answer;
+    console.log(`  Q: ${q}`);
+    console.log(`  ${a.scope}; labels: ${a.labels.join(", ") || "none"}`);
+    for (const c of a.citations) {
+      console.log(
+        c.kind === "SYLLABUS"
+          ? `    cites syllabus unit ${c.unitNo}: ${c.unitTitle} > ${c.topicTitle ?? ""}`
+          : `    cites class of ${c.taughtOn}`,
+      );
+    }
+    console.log(`  A: ${a.content.replace(/\n+/g, "\n     ")}`);
+    console.log(`  Questions used this month: ${res.quota.used} of ${res.quota.limit}\n`);
+  }
+
   // ---------- The ledger ----------
-  console.log("6. Usage ledger for this college (text-to-speech for the clip is not in it)");
+  console.log("7. Usage ledger for this college (text-to-speech for the clip is not in it)");
   const rows = await withSystem((db) =>
     db.aiUsage.findMany({ where: { tenantId: ids.tenantId }, orderBy: { createdAt: "asc" } }),
   );

@@ -6,6 +6,9 @@ import { logger } from "../../lib/logger.js";
 import { usageService, type AiFeature } from "../usage/index.js";
 import { getAiProvider, type InputPart } from "./ai.provider.js";
 import {
+  CHAT_ANSWER_SYSTEM,
+  CHAT_ROUTE_SYSTEM,
+  CHAT_SUMMARY_SYSTEM,
   ENTRY_ORGANIZE_SYSTEM,
   PHOTO_READ_SYSTEM,
   SYLLABUS_CHANGE_SYSTEM,
@@ -13,11 +16,16 @@ import {
   dataBlock,
 } from "./ai.prompts.js";
 import {
+  chatAnswerSchema,
+  chatRouteSchema,
+  chatSummarySchema,
   entryOrganizeSchema,
   photoReadingSchema,
   syllabusChangeSchema,
   syllabusExtractionSchema,
   toStrictJsonSchema,
+  type ChatAnswer,
+  type ChatRoute,
   type EntryOrganized,
   type PhotoReading,
   type SyllabusChange,
@@ -206,6 +214,75 @@ export const aiService = {
       schemaName: "entry_organized",
       maxOutputTokens: 1500,
     });
+  },
+
+  /**
+   * The cheap first step of a chat question: language, a search query, the subject, whether it
+   * belongs to the syllabus, whether it needs the stronger model, and any date range asked about.
+   */
+  routeQuestion(
+    ctx: AiContext,
+    input: { subjects: string; history: string; question: string; today: string; weekday: string },
+  ): Promise<ChatRoute> {
+    return structured(ctx, "CHAT", "route", models.router(), {
+      system: CHAT_ROUTE_SYSTEM,
+      input: [
+        {
+          type: "text",
+          text: `Today is ${input.weekday}, ${input.today}, in the college's calendar.`,
+        },
+        { type: "text", text: dataBlock("subjects", input.subjects) },
+        { type: "text", text: dataBlock("recent conversation", input.history || "(none)") },
+        { type: "text", text: dataBlock("question", input.question) },
+      ],
+      schema: chatRouteSchema,
+      schemaName: "chat_route",
+      maxOutputTokens: 800,
+    });
+  },
+
+  /** The grounded answer, with the keys of the sources it uses. */
+  answerQuestion(
+    ctx: AiContext,
+    model: string,
+    input: {
+      sources: string;
+      summary: string;
+      history: string;
+      question: string;
+      language: string;
+    },
+  ): Promise<ChatAnswer> {
+    return structured(ctx, "CHAT", "answer", model, {
+      system: `${CHAT_ANSWER_SYSTEM}\nAnswer in: ${input.language}.`,
+      input: [
+        { type: "text", text: dataBlock("sources", input.sources || "(no sources found)") },
+        {
+          type: "text",
+          text: dataBlock("earlier conversation summary", input.summary || "(none)"),
+        },
+        { type: "text", text: dataBlock("recent conversation", input.history || "(none)") },
+        { type: "text", text: dataBlock("question", input.question) },
+      ],
+      schema: chatAnswerSchema,
+      schemaName: "chat_answer",
+      maxOutputTokens: 3000,
+    });
+  },
+
+  /** Folds older turns into the conversation's running summary. */
+  async summarizeChat(ctx: AiContext, previous: string, turns: string): Promise<string> {
+    const result = await structured(ctx, "CHAT", "summarize", models.router(), {
+      system: CHAT_SUMMARY_SYSTEM,
+      input: [
+        { type: "text", text: dataBlock("previous summary", previous || "(none)") },
+        { type: "text", text: dataBlock("older turns", turns) },
+      ],
+      schema: chatSummarySchema,
+      schemaName: "chat_summary",
+      maxOutputTokens: 600,
+    });
+    return result.summary;
   },
 
   /** Embeds texts in batches; one ledger row per batch. */

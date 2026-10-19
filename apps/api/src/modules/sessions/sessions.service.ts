@@ -1072,6 +1072,15 @@ export const sessionsService = {
       );
   },
 
+  /**
+   * Chat (feature 8): the entries for which one of these versions is still the live, visible
+   * version. Retrieval hits that are not in the result are dropped, and old answers citing them
+   * are marked as out of date.
+   */
+  liveByVersions: (scope: TenantScope, versionIds: string[]) =>
+    versionIds.length ? repo.listByLiveVersions(scope, versionIds) : Promise.resolve([]),
+  entryResource,
+
   /** For catch-up and date questions (feature 9): live entries of sections in a date range. */
   liveForSections: (scope: TenantScope, sectionIds: string[], from: string, to: string) =>
     repo.listLiveForSections(scope, sectionIds, fromDateOnly(from)!, fromDateOnly(to)!),

@@ -1090,6 +1090,36 @@ export const syllabusService = {
     return Boolean(syllabus?.currentVersionId);
   },
 
+  /**
+   * Chat (feature 8): each subject of these semesters with a live syllabus, its live version
+   * and unit titles. Retrieval hits are re-checked against `versionId`.
+   */
+  async liveOutlines(scope: TenantScope, semesterIds: string[]) {
+    const syllabi = (await repo.listForSemesters(scope, semesterIds)).filter(
+      (s) => s.subjectId && s.currentVersionId,
+    );
+    const outlines = [];
+    for (const s of syllabi) {
+      const topics = await repo.listTopics(scope, s.currentVersionId!);
+      outlines.push({
+        subjectId: s.subjectId!,
+        programId: s.programId,
+        batchId: s.batchId,
+        semesterId: s.semesterId,
+        versionId: s.currentVersionId!,
+        units: buildTree(topics).map((u) => u.title),
+      });
+    }
+    return outlines;
+  },
+
+  /** Which of these versions are still live (for marking old answers as out of date). */
+  async stillLive(scope: TenantScope, versionIds: string[]): Promise<Set<string>> {
+    if (versionIds.length === 0) return new Set();
+    const rows = await repo.listByCurrentVersions(scope, versionIds);
+    return new Set(rows.map((r) => r.currentVersionId!));
+  },
+
   /** The live version id and its topics, for mapping class entries (feature 6). */
   async liveTopics(scope: TenantScope, subjectId: string) {
     const syllabus = await repo.findSyllabusBySubject(scope, subjectId);

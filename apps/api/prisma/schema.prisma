@@ -63,6 +63,8 @@ model Tenant {
   entryTopics      EntryTopic[]
   approvalSettings ApprovalSetting[]
   mediaReadings    MediaReading[]
+  conversations    Conversation[]
+  messages         Message[]
 
   @@map("tenants")
 }
@@ -96,6 +98,7 @@ model User {
   studentRecords   StudentRecord[]
   classesTaught    ClassTeacher[]
   filesUploaded    FileObject[]
+  conversations    Conversation[]
 
   @@map("users")
 }
@@ -1050,4 +1053,60 @@ model ApprovalSetting {
 
   @@index([tenantId, programId])
   @@map("approval_settings")
+}
+
+// ---------- Student Q&A (private to the student) ----------
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+/// One chat thread of a student. Readable only by its owner: never by teachers or admins.
+model Conversation {
+  id              String    @id @default(cuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  /// The subject the student pinned; null = the router infers it per question.
+  pinnedSubjectId String?
+  /// Also search semesters the student was enrolled in before (off by default).
+  includePast     Boolean   @default(false)
+  /// A running summary of the turns older than the recent window, to keep prompts short.
+  summary         String?
+  /// How many messages (oldest first) the summary covers.
+  summarizedCount Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  messages        Message[]
+
+  @@unique([id, tenantId])
+  @@index([tenantId, userId, updatedAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  role           MessageRole
+  content        String
+  /// The router's verdict for a question: IN_SYLLABUS, RELATED, UNRELATED, DATE.
+  scope          String?
+  language       String?
+  /// [{ key, kind: SYLLABUS | CLASS, subject, unit, topic, taughtOn, versionIds ... }]
+  citations      Json         @default("[]")
+  /// FROM_SYLLABUS, REPORTED_IN_CLASS, GENERAL_EXPLANATION, OUTSIDE_SYLLABUS, NOT_IN_MATERIAL
+  labels         Json         @default("[]")
+  model          String?
+  /// Ties the turn to its rows in the usage ledger.
+  requestId      String?
+  createdAt      DateTime     @default(now())
+
+  @@index([tenantId, conversationId, createdAt])
+  @@map("messages")
 }

@@ -206,6 +206,7 @@ Prices are per 1M tokens unless stated, taken from third-party price trackers da
 | Embedding a 40-page syllabus                                              | about 20k tokens                       | $0.0004          |
 
 - The router escalates a question from Mini to Terra when it detects a complex, multi-step or code question.
+- Chat answers are produced inside the request, not as a job: a question is interactive and the web app would otherwise have to poll. Streaming (server-sent events) is a later improvement.
 
 ## Background jobs (BullMQ on Redis)
 
@@ -342,7 +343,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 - [x] 5. Syllabus ingestion
 - [x] 6. Class entries and approvals
 - [x] 7. CR voice and photo input
-- [ ] 8. Student Q&A
+- [x] 8. Student Q&A
 - [ ] 9. Catch-up
 - [ ] 10. Student notes
 - [ ] 11. Exams and exam scope

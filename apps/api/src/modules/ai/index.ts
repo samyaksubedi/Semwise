@@ -9,6 +9,8 @@ export {
 } from "./ai.provider.js";
 export { dataBlock } from "./ai.prompts.js";
 export type {
+  ChatAnswer,
+  ChatRoute,
   EntryOrganized,
   PhotoReading,
   SyllabusChange,

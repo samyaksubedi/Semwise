@@ -108,6 +108,19 @@ export const knowledgeService = {
     return repo.search(scope, vector!, filter, limit);
   },
 
+  /** One embedding of the query, several filtered searches (say syllabus and class content). */
+  async searchEach(
+    scope: TenantScope,
+    ai: AiContext,
+    feature: AiFeature,
+    query: string,
+    filters: SearchFilter[],
+    limit = 8,
+  ) {
+    const [vector] = await aiService.embed({ ...ai, countsAsNewRequest: false }, feature, [query]);
+    return Promise.all(filters.map((filter) => repo.search(scope, vector!, filter, limit)));
+  },
+
   pointsOfVersion: (scope: TenantScope, versionId: string) =>
     repo.scrollByVersion(scope, versionId),
 };
