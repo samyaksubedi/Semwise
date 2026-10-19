@@ -7,7 +7,8 @@
  * publish job with embeddings), creates and publishes one class entry, and prints the outline,
  * how the entry was organized and mapped, and the cost written to the usage ledger. It also sends
  * a one-page PDF with almost no text layer, which takes the scanned path (the PDF itself goes to
- * the model). Without OPENAI_API_KEY it does nothing. Never run by `pnpm test`.
+ * the model), then has the CR transcribe a short spoken clip and read a whiteboard photo.
+ * Without OPENAI_API_KEY it does nothing. Never run by `pnpm test`.
  *
  * Jobs run in-process under their own queue prefix, so a running dev worker does not take them.
  */
@@ -30,6 +31,7 @@ const [
   { makePdf },
   { knowledgeService },
   { prisma },
+  { speech, whiteboardPng },
 ] = await Promise.all([
   import("supertest"),
   import("../app.js"),
@@ -40,6 +42,7 @@ const [
   import("../test/fakes.js"),
   import("../modules/knowledge/index.js"),
   import("../lib/prisma.js"),
+  import("./smoke-fixtures.js"),
 ]);
 
 type QueueName = Parameters<typeof getQueue>[0];
@@ -117,18 +120,22 @@ async function login(app: ReturnType<typeof createApp>, email: string): Promise<
 }
 
 /** The browser's part of an upload: ticket, PUT to the signed URL, complete. */
-async function upload(agent: Agent, subjectId: string, pdf: Uint8Array): Promise<string> {
+async function upload(
+  agent: Agent,
+  target: { subjectId: string } | { classId: string },
+  bytes: Uint8Array,
+  kind: "SYLLABUS_PDF" | "AUDIO" | "PHOTO" = "SYLLABUS_PDF",
+  mime = "application/pdf",
+): Promise<string> {
   const ticket = ok(
-    await agent
-      .post("/v1/files/uploads")
-      .send({ kind: "SYLLABUS_PDF", mime: "application/pdf", size: pdf.length, subjectId }),
+    await agent.post("/v1/files/uploads").send({ kind, mime, size: bytes.length, ...target }),
     201,
     "upload ticket",
   ) as { fileId: string; uploadUrl: string };
   const put = await fetch(ticket.uploadUrl, {
     method: "PUT",
-    body: Buffer.from(pdf),
-    headers: { "Content-Type": "application/pdf" },
+    body: Buffer.from(bytes),
+    headers: { "Content-Type": mime },
   });
   if (!put.ok) throw new Error(`PUT to storage failed: ${put.status} (is \`pnpm db:up\` running?)`);
   ok(await agent.post(`/v1/files/${ticket.fileId}/complete`), 200, "upload complete");
@@ -175,7 +182,11 @@ async function main() {
           passwordHash,
         },
       });
-    const [admin, teacher] = [await mkUser("admin"), await mkUser("teacher")];
+    const [admin, teacher, cr] = [
+      await mkUser("admin"),
+      await mkUser("teacher"),
+      await mkUser("cr"),
+    ];
     const program = await db.program.create({ data: { tenantId, name: "BIT", code: "BIT" } });
     const batch = await db.batch.create({
       data: { tenantId, programId: program.id, name: "BIT 2026", intakeYear: 2026 },
@@ -194,10 +205,21 @@ async function main() {
       data: { userId: admin.id, tenantId, role: "PROGRAM_ADMIN", programId: program.id },
     });
     await db.membership.create({ data: { userId: teacher.id, tenantId, role: "TEACHER" } });
+    const record = await db.studentRecord.create({
+      data: { ...path, userId: cr.id, email: cr.email, rollNo: "SMOKE-1", status: "ACTIVE" },
+    });
+    await db.enrollment.create({
+      data: { ...sem, sectionId: section.id, studentRecordId: record.id },
+    });
+    await db.membership.create({ data: { userId: cr.id, tenantId, role: "STUDENT" } });
+    await db.membership.create({
+      data: { userId: cr.id, tenantId, role: "CR", sectionId: section.id },
+    });
     return {
       tenantId,
       admin: admin.email,
       teacher: { id: teacher.id, email: teacher.email },
+      cr: cr.email,
       section: section.id,
       dsa: dsa.id,
       discrete: discrete.id,
@@ -209,7 +231,7 @@ async function main() {
 
   // ---------- Syllabus: upload, extract, publish ----------
   console.log("1. Syllabus with a text layer (Data Structures and Algorithms)");
-  const fileId = await upload(admin, ids.dsa, SYLLABUS);
+  const fileId = await upload(admin, { subjectId: ids.dsa }, SYLLABUS);
   const draft = ok(
     await admin.post(`/v1/subjects/${ids.dsa}/syllabus/drafts`).send({ fileId }),
     202,
@@ -247,7 +269,7 @@ async function main() {
 
   // ---------- Scanned path: the PDF itself goes to the model ----------
   console.log("2. Syllabus without a usable text layer (Discrete Structures, sent as a PDF)");
-  const scannedFile = await upload(admin, ids.discrete, SCANNED);
+  const scannedFile = await upload(admin, { subjectId: ids.discrete }, SCANNED);
   const scannedDraft = ok(
     await admin.post(`/v1/subjects/${ids.discrete}/syllabus/drafts`).send({ fileId: scannedFile }),
     202,
@@ -311,8 +333,42 @@ async function main() {
   };
   console.log(`  Published by the teacher: ${published.live ? "yes" : "NO"}\n`);
 
+  // ---------- Voice and photo (CR) ----------
+  const crAgent = await login(app, ids.cr);
+  const readMedia = async (kind: "AUDIO" | "PHOTO", bytes: Uint8Array, mime: string) => {
+    const mediaId = await upload(crAgent, { classId: klass.id }, bytes, kind, mime);
+    const path = kind === "AUDIO" ? "transcriptions" : "photo-readings";
+    const started = ok(
+      await crAgent.post(`/v1/classes/${klass.id}/${path}`).send({ fileId: mediaId }),
+      202,
+      path,
+    ) as { id: string };
+    await drain("ai");
+    return ok(await crAgent.get(`/v1/media-readings/${started.id}`), 200, "reading") as {
+      status: string;
+      text: string | null;
+      error: string | null;
+      seconds: number | null;
+    };
+  };
+  console.log("4. A CR's voice note (a spoken clip made with text-to-speech)");
+  const clip = await speech(
+    "Today we finished stacks. Infix to postfix conversion using the operator stack, then evaluation of postfix expressions. In the last ten minutes we started circular queues.",
+  );
+  const voice = await readMedia("AUDIO", clip, "audio/mpeg");
+  console.log(`  ${voice.status}, ${voice.seconds} s: ${voice.text ?? voice.error}\n`);
+  if (voice.status !== "DONE") throw new Error(`Transcription ${voice.status}: ${voice.error}`);
+
+  console.log("5. A CR's whiteboard photo (a drawn PNG)");
+  const board = whiteboardPng(["STACK - PUSH POP", "INFIX TO POSTFIX", "CIRCULAR QUEUE"]);
+  const photo = await readMedia("PHOTO", board, "image/png");
+  console.log(`  ${photo.status}:`);
+  for (const line of (photo.text ?? photo.error ?? "").split("\n")) console.log(`    ${line}`);
+  if (photo.status !== "DONE") throw new Error(`Photo reading ${photo.status}: ${photo.error}`);
+  console.log();
+
   // ---------- The ledger ----------
-  console.log("4. Usage ledger for this college");
+  console.log("6. Usage ledger for this college (text-to-speech for the clip is not in it)");
   const rows = await withSystem((db) =>
     db.aiUsage.findMany({ where: { tenantId: ids.tenantId }, orderBy: { createdAt: "asc" } }),
   );
@@ -320,7 +376,7 @@ async function main() {
   for (const r of rows) {
     total += r.costMicros;
     console.log(
-      `  ${r.feature.padEnd(16)} ${r.task.padEnd(10)} ${r.model.padEnd(24)} in ${String(r.inputTokens).padStart(6)}  out ${String(r.outputTokens).padStart(5)}  cached ${String(r.cachedTokens).padStart(5)}  $${(r.costMicros / 1e6).toFixed(5)}${r.priceId ? "" : "  (no price row)"}`,
+      `  ${r.feature.padEnd(16)} ${r.task.padEnd(10)} ${r.model.padEnd(24)} in ${String(r.inputTokens).padStart(6)}  out ${String(r.outputTokens).padStart(5)}  cached ${String(r.cachedTokens).padStart(5)}${r.audioSeconds ? `  audio ${r.audioSeconds}s` : ""}  $${(r.costMicros / 1e6).toFixed(5)}${r.priceId ? "" : "  (no price row)"}`,
     );
   }
   console.log(`  Total: $${(total / 1e6).toFixed(4)} over ${rows.length} calls`);

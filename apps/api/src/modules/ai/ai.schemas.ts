@@ -100,3 +100,9 @@ export const entryOrganizeSchema = z.strictObject({
   summary: z.string().max(1500),
 });
 export type EntryOrganized = z.infer<typeof entryOrganizeSchema>;
+
+export const photoReadingSchema = z.strictObject({
+  text: z.string().max(8000),
+  unreadable: z.boolean(),
+});
+export type PhotoReading = z.infer<typeof photoReadingSchema>;

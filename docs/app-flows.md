@@ -101,6 +101,8 @@ As built: the entry is a draft until the author submits it; the organize job fil
 3. The CR sees the text, edits it, and continues with the normal entry flow from step 2 above.
 4. Raw audio is deleted after transcription; photos follow the retention policy.
 
+As built: the CR uploads the file for the class (`POST /v1/files/uploads` with `kind` AUDIO or PHOTO and `classId`), then asks for `POST /v1/classes/:id/transcriptions` or `/photo-readings` with `{ fileId }` (202). A job does the work; `GET /v1/media-readings/:id` shows its state and text. A reading is visible only to the person who uploaded the file. The dictation quota (60 a month by default) is checked before the job is queued, so a CR at the limit hears it at once; photo readings count toward the college budget only. Asking again for the same file returns the same reading. The entry is then created as usual with `inputKind` VOICE or PHOTO and `mediaFileId`; it must be the author's own finished reading for the same class and kind. Raw audio is deleted as soon as the transcription ends, whether it succeeded or failed (a recording never transcribed is deleted after 24 hours). A photo is kept until 30 days after its entry is published (30 days after the reading if it is never used). An hourly retention job deletes the bytes of files past their date and of uploads never completed after 24 hours; the rows stay as records. Silence and unreadable photos fail with advice to try again.
+
 ## 8. Student Q&A
 
 1. Student types a question in chat, optionally pinning a subject.

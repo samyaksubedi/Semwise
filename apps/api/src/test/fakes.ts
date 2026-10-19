@@ -88,7 +88,11 @@ export class FakeAi implements AiProvider {
 
   async transcribe(model: string) {
     this.calls.push({ kind: "transcribe", model });
-    return { text: this.transcript, seconds: 95 };
+    if (this.failNext > 0) {
+      this.failNext -= 1;
+      throw new Error("AI provider down");
+    }
+    return { text: this.transcript, seconds: 95, inputTokens: 0, outputTokens: 0 };
   }
 
   jsonCalls(schemaName?: string) {

@@ -29,8 +29,9 @@ import {
   type Resource,
 } from "../authz/index.js";
 import { classResource, classesService } from "../classes/index.js";
-import { filesService } from "../files/index.js";
+import { RETENTION, filesService } from "../files/index.js";
 import { knowledgeService } from "../knowledge/index.js";
+import { mediaService } from "../media/index.js";
 import { membershipsService } from "../memberships/index.js";
 import { notificationsService } from "../notifications/index.js";
 import { fromDateOnly, structureService, toDateOnly } from "../structure/index.js";
@@ -224,6 +225,31 @@ async function storeTopics(scope: TenantScope, versionId: string, topics: Stored
   );
 }
 
+/**
+ * Voice and photo input (CR only): the text must come from the author's own finished reading of
+ * a file uploaded for this class. TEXT input may not carry a file.
+ */
+async function checkMedia(
+  actor: Actor,
+  classId: string,
+  input: { inputKind: "TEXT" | "VOICE" | "PHOTO"; mediaFileId?: string | undefined },
+): Promise<void> {
+  if (input.inputKind === "TEXT") {
+    if (input.mediaFileId) throw AppError.invalid("Text entries do not take a file");
+    return;
+  }
+  const klass = await classesService.find(scopeOf(actor), classId);
+  if (!klass || !can(actor, Action.ENTRY_USE_MEDIA, classResource(klass)))
+    throw AppError.forbidden();
+  if (!input.mediaFileId) throw AppError.invalid("Attach the voice or photo file");
+  await mediaService.requireUsable(scopeOf(actor), {
+    fileId: input.mediaFileId,
+    inputKind: input.inputKind,
+    classId,
+    userId: actor.userId,
+  });
+}
+
 async function emailsOf(userIds: string[]): Promise<string[]> {
   return (await usersService.findManyByIds(userIds))
     .filter((u) => u.status === "ACTIVE")
@@ -247,19 +273,7 @@ export const sessionsService = {
     const semester = await structureService.findSemester(scope, klass.semesterId);
     if (semester?.status !== "ACTIVE")
       throw AppError.invalidState("Entries can be added only in the active semester");
-    if (input.inputKind !== "TEXT") {
-      if (!can(actor, Action.ENTRY_USE_MEDIA, resource)) throw AppError.forbidden();
-      if (!input.mediaFileId) throw AppError.invalid("Attach the voice or photo file");
-    }
-    if (input.mediaFileId) {
-      const file = await filesService.requireReady(
-        scope,
-        input.mediaFileId,
-        input.inputKind === "PHOTO" ? "PHOTO" : "AUDIO",
-      );
-      if (file.classId !== klass.id || file.uploadedById !== actor.userId)
-        throw AppError.notFound("File not found");
-    }
+    await checkMedia(actor, klass.id, input);
     if (!isAiConfigured()) throw AppError.notConfigured("AI");
     const today = todayIn(timezone);
     const taughtOn = input.taughtOn ?? today;
@@ -560,6 +574,15 @@ export const sessionsService = {
     if (previous && previous !== version.id) {
       await knowledgeService.removeVersions(scope, "ENTRY_VERSION", [previous]);
     }
+    // Retention: the whiteboard photo is kept for a while after the entry goes live.
+    if (version.inputKind === "PHOTO" && version.mediaFileId) {
+      const days = RETENTION.photoDaysAfterPublish;
+      await filesService.deleteAfter(
+        scope,
+        version.mediaFileId,
+        new Date(Date.now() + days * 24 * 60 * 60 * 1000),
+      );
+    }
     return { published: version.id };
   },
 
@@ -632,8 +655,7 @@ export const sessionsService = {
     if (!entry.currentVersionId) throw AppError.invalidState("Submit the entry first");
     if (!can(actor, Action.ENTRY_EDIT_OWN, entryResource(entry, entry.authorId)))
       throw AppError.forbidden();
-    if (input.inputKind !== "TEXT" && !can(actor, Action.ENTRY_USE_MEDIA, entryResource(entry)))
-      throw AppError.forbidden();
+    await checkMedia(actor, entry.classId, input);
     if (entry.versions.some((v) => OPEN_STATUSES.has(v.status))) {
       throw AppError.conflict(ErrorCode.CONFLICT, "A change to this entry is already in progress");
     }

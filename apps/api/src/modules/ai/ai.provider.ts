@@ -39,6 +39,9 @@ export interface EmbedResult {
 export interface TranscribeResult {
   text: string;
   seconds: number;
+  /** Token-billed transcription models report tokens instead of (or as well as) duration. */
+  inputTokens: number;
+  outputTokens: number;
 }
 
 /**
@@ -66,6 +69,17 @@ interface ResponsesBody {
 }
 
 const base64 = (data: Uint8Array) => Buffer.from(data).toString("base64");
+
+/** The transcription API reads the format from the file name ("dictation.mpeg" is refused). */
+export const AUDIO_EXTENSIONS: Record<string, string> = {
+  "audio/webm": "webm",
+  "audio/ogg": "ogg",
+  "audio/mpeg": "mp3",
+  "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/wav": "wav",
+  "audio/x-wav": "wav",
+};
 
 function toContent(part: InputPart) {
   switch (part.type) {
@@ -191,13 +205,24 @@ class OpenAiProvider implements AiProvider {
 
   async transcribe(model: string, audio: Uint8Array, mime: string): Promise<TranscribeResult> {
     const form = new FormData();
-    const extension = mime.split("/")[1]?.replace("x-", "") ?? "webm";
+    const extension = AUDIO_EXTENSIONS[mime] ?? "webm";
     form.append("file", new Blob([Buffer.from(audio)], { type: mime }), `dictation.${extension}`);
     form.append("model", model);
-    form.append("response_format", "verbose_json");
+    // The newer transcription models accept only json or text (verbose_json is refused).
+    form.append("response_format", "json");
     const res = await this.post("/audio/transcriptions", form, false);
-    const body = (await res.json()) as { text?: string; duration?: number };
-    return { text: body.text ?? "", seconds: Math.ceil(body.duration ?? 0) };
+    const body = (await res.json()) as {
+      text?: string;
+      duration?: number;
+      usage?: { type?: string; seconds?: number; input_tokens?: number; output_tokens?: number };
+    };
+    const usage = body.usage ?? {};
+    return {
+      text: body.text ?? "",
+      seconds: Math.ceil(usage.type === "duration" ? (usage.seconds ?? 0) : (body.duration ?? 0)),
+      inputTokens: usage.input_tokens ?? 0,
+      outputTokens: usage.output_tokens ?? 0,
+    };
   }
 }
 

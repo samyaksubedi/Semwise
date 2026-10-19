@@ -8,6 +8,7 @@ import { classesRouter, semesterClassesRouter } from "./modules/classes/index.js
 import { requireSuperAdmin, resolveTenant } from "./modules/authz/index.js";
 import { filesRouter } from "./modules/files/index.js";
 import { healthRouter } from "./modules/health/index.js";
+import { classMediaRouter, mediaReadingsRouter } from "./modules/media/index.js";
 import {
   approvalsQueueRouter,
   classEntriesRouter,
@@ -93,6 +94,8 @@ export function createV1Router(): Router {
     ["/classes", classesRouter],
     ["/classes", classApprovalRouter],
     ["/classes", classEntriesRouter],
+    ["/classes", classMediaRouter],
+    ["/media-readings", mediaReadingsRouter],
     ["/entries", entriesRouter],
     ["/approvals", approvalsQueueRouter],
     ["/sections", sectionsRouter],

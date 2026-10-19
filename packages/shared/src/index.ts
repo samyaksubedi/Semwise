@@ -12,3 +12,4 @@ export * from "./schemas/classes.js";
 export * from "./schemas/files.js";
 export * from "./schemas/syllabus.js";
 export * from "./schemas/entries.js";
+export * from "./schemas/media.js";

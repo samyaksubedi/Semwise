@@ -8,4 +8,9 @@ export {
   type JsonRequest,
 } from "./ai.provider.js";
 export { dataBlock } from "./ai.prompts.js";
-export type { EntryOrganized, SyllabusChange, SyllabusExtraction } from "./ai.schemas.js";
+export type {
+  EntryOrganized,
+  PhotoReading,
+  SyllabusChange,
+  SyllabusExtraction,
+} from "./ai.schemas.js";

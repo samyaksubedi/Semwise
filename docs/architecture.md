@@ -130,6 +130,7 @@ Rules (the blog's, plus the multi-tenant ones):
 | `ai`                                                           | Provider wrapper, prompts, router, model selection, metering                                                         | 5, 8       |
 | `sessions`                                                     | Class sessions and CR/teacher entries, versions, topic mapping, duplicate detection                                  | 6          |
 | `approvals`                                                    | Approval settings (default, override, lock), queue, reminders, escalation                                            | 6          |
+| `media`                                                        | CR voice transcription and photo reading, private readings, retention of media                                       | 7          |
 | `notifications`                                                | Email delivery (Nodemailer) through a throttled queue, with the protections listed under Email                       | 3, 6       |
 | `chat`                                                         | Student Q&A, conversations, syllabus classification, labeled answers, citations                                      | 8          |
 | `catchup`                                                      | Date-range summaries                                                                                                 | 9          |
@@ -217,7 +218,7 @@ Long or failure-prone work runs as retryable jobs: PDF extraction, OCR, transcri
 - **Delayed jobs** schedule approval reminders (24 and 48 hours) and escalation; they are cancelled when the teacher acts.
 - Job state (queued, running, failed, done) is also written to Postgres where the user needs to see it.
 - Redis must run with **persistence on (AOF)**, **`maxmemory-policy noeviction`** and a password, reachable only on the internal network; otherwise queued jobs can be lost.
-- Handlers live in `src/jobs`; the worker loads them; the schedulers for recurring jobs (expired sessions, stale links) start in the worker.
+- Handlers live in `src/jobs`; the worker loads them; the schedulers for recurring jobs (expired sessions daily, file retention hourly) start in the worker.
 
 ## File storage (Cloudflare R2)
 
@@ -340,7 +341,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 - [x] 4. Classes
 - [x] 5. Syllabus ingestion
 - [x] 6. Class entries and approvals
-- [ ] 7. CR voice and photo input
+- [x] 7. CR voice and photo input
 - [ ] 8. Student Q&A
 - [ ] 9. Catch-up
 - [ ] 10. Student notes

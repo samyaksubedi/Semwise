@@ -15,6 +15,18 @@ import { classResource, classesService } from "../classes/index.js";
 import { structureService } from "../structure/index.js";
 import { filesRepository as repo } from "./files.repository.js";
 
+/** How long stored media is kept (proposed retention, pending legal review). */
+export const RETENTION = {
+  /** Raw audio is deleted right after transcription; this catches recordings never transcribed. */
+  audioMaxHours: 24,
+  photoDaysAfterPublish: 30,
+  /** An upload URL was issued but the upload never completed. */
+  pendingUploadHours: 24,
+} as const;
+
+const HOUR = 60 * 60 * 1000;
+const PURGE_BATCH = 200;
+
 export const UPLOAD_URL_SECONDS = 5 * 60;
 export const DOWNLOAD_URL_SECONDS = 5 * 60;
 
@@ -250,6 +262,30 @@ export const filesService = {
   /** Schedules deletion by the retention job (photos 30 days after publishing). */
   async deleteAfter(scope: TenantScope, fileId: string, at: Date): Promise<void> {
     await repo.update(scope, fileId, { deleteAfter: at });
+  },
+
+  /** The retention job: deletes the bytes of every file that is due; rows stay as records. */
+  async purgeExpired(now = new Date()): Promise<number> {
+    if (!isStorageConfigured()) return 0;
+    const staleBefore = new Date(now.getTime() - RETENTION.pendingUploadHours * HOUR);
+    let deleted = 0;
+    for (const tenantId of await repo.tenantsWithDueFiles(now, staleBefore)) {
+      const scope = { tenantId };
+      for (;;) {
+        const due = await repo.listDue(scope, now, staleBefore, PURGE_BATCH);
+        for (const file of due) {
+          await getStorage()
+            .delete(file.storageKey)
+            .catch((err: Error) =>
+              logger.warn({ fileId: file.id, err: err.message }, "Could not delete a stored file"),
+            );
+          await repo.update(scope, file.id, { status: "DELETED", deleteAfter: null });
+          deleted += 1;
+        }
+        if (due.length < PURGE_BATCH) break;
+      }
+    }
+    return deleted;
   },
 
   toView,

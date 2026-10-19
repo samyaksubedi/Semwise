@@ -62,6 +62,7 @@ model Tenant {
   entryVersions    EntryVersion[]
   entryTopics      EntryTopic[]
   approvalSettings ApprovalSetting[]
+  mediaReadings    MediaReading[]
 
   @@map("tenants")
 }
@@ -611,6 +612,7 @@ model Class {
   updatedAt  DateTime        @updatedAt
   teachers   ClassTeacher[]
   sessions   ClassSession[]
+  readings   MediaReading[]
 
   @@unique([subjectId, sectionId])
   @@unique([id, tenantId])
@@ -674,11 +676,38 @@ model FileObject {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   syllabusVersions SyllabusVersion[]
+  reading          MediaReading?
 
   @@unique([id, tenantId])
   @@index([tenantId, kind, status])
   @@index([status, deleteAfter])
   @@map("files")
+}
+
+/// A voice note transcribed or a whiteboard photo read for a CR (feature 7). The CR edits the text
+/// before it becomes an entry; only the person who uploaded the file can see it.
+model MediaReading {
+  id          String     @id @default(cuid())
+  tenantId    String
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  classId     String
+  class       Class      @relation(fields: [classId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  fileId      String     @unique
+  file        FileObject @relation(fields: [fileId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  kind        FileKind
+  status      JobState   @default(QUEUED)
+  text        String?
+  error       String?
+  /// Length of a voice note in seconds (the cost is in the usage ledger).
+  seconds     Int?
+  createdById String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([id, tenantId])
+  @@unique([fileId, tenantId])
+  @@index([tenantId, createdById])
+  @@map("media_readings")
 }
 
 // ---------- Syllabus ----------

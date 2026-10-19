@@ -92,6 +92,8 @@ CR rows for student features show **own** because a CR is also a student in thei
 | -------------------------------------------- | ------------------------------------------------------ |
 | Get a signed upload URL for a syllabus PDF   | UA, PA (own program)                                   |
 | Get a signed upload URL for audio or a photo | CR (own section)                                       |
+| Transcribe audio or read a photo             | CR (own section), own uploads only                     |
+| See a transcription or photo reading         | Only the person who uploaded the file                  |
 | Get a signed download URL                    | Only users who may read the record the file belongs to |
 
 ## Required tests

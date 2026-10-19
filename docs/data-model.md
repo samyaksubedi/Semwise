@@ -42,6 +42,8 @@ Children repeat their path (programId, batchId, semesterId, tenantId). Composite
 
 `FileObject`: tenantId, storageKey (`tenants/<tenantId>/<area>/<id>`), mime, size, kind (SYLLABUS_PDF, AUDIO, PHOTO), the path it belongs to (programId, batchId, semesterId, subjectId, sectionId, classId) for download checks, uploadedBy, status (PENDING, READY, DELETED), deleteAfter.
 
+`MediaReading` (feature 7): tenantId, classId, fileId (unique), kind (AUDIO, PHOTO), status (job state), text, error, seconds (voice length), createdById. Private to its uploader; the CR edits the text before it becomes an entry.
+
 `SyllabusPage`: versionId, pageNo, text (the extracted text of each PDF page, shown as the source next to an item).
 
 ## Syllabus

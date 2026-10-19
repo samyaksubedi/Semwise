@@ -4,7 +4,8 @@ import type { QueueSettings, ScheduledJob } from "./registry.js";
 
 export { handlers, registerHandler, runJobNow } from "./registry.js";
 
-const DAY = 24 * 60 * 60 * 1000;
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
 
 export const queueSettings: Record<QueueName, QueueSettings> = {
   [QueueName.email]: { concurrency: 1, limiter: { max: env.MAIL_PER_MINUTE, duration: 60_000 } },
@@ -16,6 +17,7 @@ export const queueSettings: Record<QueueName, QueueSettings> = {
 
 export const scheduledJobs: ScheduledJob[] = [
   { queue: QueueName.maintenance, name: "session-cleanup", everyMs: DAY },
+  { queue: QueueName.maintenance, name: "file-retention", everyMs: HOUR },
 ];
 
 /** Loads every job handler file so it registers itself. The worker (and tests) call this once. */
@@ -24,4 +26,5 @@ export async function loadJobHandlers(): Promise<void> {
   await import("./maintenance.job.js");
   await import("./syllabus.job.js");
   await import("./entries.job.js");
+  await import("./media.job.js");
 }
