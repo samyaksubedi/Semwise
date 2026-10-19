@@ -92,6 +92,8 @@ As built: the upload is a signed PUT straight to storage, then `complete` checks
 7. **Editing later:** the CR edits a published entry; with auto-approval off the edit goes through approval while the old version stays live.
 8. Teachers can add entries directly; they skip approval.
 
+As built: the entry is a draft until the author submits it; the organize job fills its topics (mapped to syllabus stable keys) and summary, which the author may correct. Only the active semester takes entries, the date is never in the future. A second entry on the same day answers 409 `DUPLICATE_ENTRY` listing the existing entry; `replace` turns the draft into the next version of that entry, `add` keeps both. Without any setting, entries wait for the teacher. A teacher override needs the program default to be unlocked. An edit whose topics are unchanged counts as a minor fix and publishes at once; an auto-approved edit emails the teachers. Reminder, escalation and unreviewed-publish jobs are delayed jobs cancelled when someone acts, and each re-checks that the version is still pending. Approved versions are indexed before they go live. Takedown removes the vectors; restore re-indexes. A new syllabus version flags entries mapped to topics that no longer exist.
+
 ## 7. CR voice and photo input
 
 1. In the entry screen the CR taps the microphone (one to two minutes) or takes a photo of the whiteboard.

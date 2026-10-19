@@ -339,7 +339,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 - [x] 3. Invitations and enrollment
 - [x] 4. Classes
 - [x] 5. Syllabus ingestion
-- [ ] 6. Class entries and approvals
+- [x] 6. Class entries and approvals
 - [ ] 7. CR voice and photo input
 - [ ] 8. Student Q&A
 - [ ] 9. Catch-up

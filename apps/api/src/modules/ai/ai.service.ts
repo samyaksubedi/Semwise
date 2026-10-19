@@ -5,11 +5,18 @@ import { env } from "../../config/env.js";
 import { logger } from "../../lib/logger.js";
 import { usageService, type AiFeature } from "../usage/index.js";
 import { getAiProvider, type InputPart } from "./ai.provider.js";
-import { SYLLABUS_CHANGE_SYSTEM, SYLLABUS_EXTRACT_SYSTEM, dataBlock } from "./ai.prompts.js";
 import {
+  ENTRY_ORGANIZE_SYSTEM,
+  SYLLABUS_CHANGE_SYSTEM,
+  SYLLABUS_EXTRACT_SYSTEM,
+  dataBlock,
+} from "./ai.prompts.js";
+import {
+  entryOrganizeSchema,
   syllabusChangeSchema,
   syllabusExtractionSchema,
   toStrictJsonSchema,
+  type EntryOrganized,
   type SyllabusChange,
   type SyllabusExtraction,
 } from "./ai.schemas.js";
@@ -128,6 +135,20 @@ export const aiService = {
       schema: syllabusChangeSchema,
       schemaName: "syllabus_changes",
       maxOutputTokens: 2000,
+    });
+  },
+
+  /** Organizes lesson notes into topics mapped to the syllabus, plus a short summary. */
+  organizeEntry(ctx: AiContext, syllabusTopics: string, notes: string): Promise<EntryOrganized> {
+    return structured(ctx, "ENTRY_ORGANIZE", "organize", models.answer(), {
+      system: ENTRY_ORGANIZE_SYSTEM,
+      input: [
+        { type: "text", text: dataBlock("syllabus topics", syllabusTopics) },
+        { type: "text", text: dataBlock("lesson notes", notes) },
+      ],
+      schema: entryOrganizeSchema,
+      schemaName: "entry_organized",
+      maxOutputTokens: 1500,
     });
   },
 

@@ -1,12 +1,18 @@
 import { Router, type RequestHandler } from "express";
 import { requireTrustedOrigin } from "./common/middleware/origin-check.js";
 import { userLimit } from "./common/middleware/rate-limit.js";
+import { classApprovalRouter, programApprovalRouter } from "./modules/approvals/index.js";
 import { auditPlatformRouter, auditRouter } from "./modules/audit/index.js";
 import { authRouter, loadSession, requireAuth } from "./modules/auth/index.js";
 import { classesRouter, semesterClassesRouter } from "./modules/classes/index.js";
 import { requireSuperAdmin, resolveTenant } from "./modules/authz/index.js";
 import { filesRouter } from "./modules/files/index.js";
 import { healthRouter } from "./modules/health/index.js";
+import {
+  approvalsQueueRouter,
+  classEntriesRouter,
+  entriesRouter,
+} from "./modules/sessions/index.js";
 import {
   sectionCrRouter,
   semesterStudentsRouter,
@@ -78,12 +84,17 @@ export function createV1Router(): Router {
   mount(tenantGuard, [
     ["/college", collegeRouter],
     ["/programs", programsRouter],
+    ["/programs", programApprovalRouter],
     ["/batches", batchesRouter],
     ["/semesters", semestersRouter],
     ["/semesters", semesterStudentsRouter],
     ["/semesters", semesterClassesRouter],
     ["/semesters", semesterSyllabusRouter],
     ["/classes", classesRouter],
+    ["/classes", classApprovalRouter],
+    ["/classes", classEntriesRouter],
+    ["/entries", entriesRouter],
+    ["/approvals", approvalsQueueRouter],
     ["/sections", sectionsRouter],
     ["/sections", sectionCrRouter],
     ["/subjects", subjectsRouter],

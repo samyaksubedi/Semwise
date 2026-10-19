@@ -23,4 +23,5 @@ export async function loadJobHandlers(): Promise<void> {
   await import("./email.job.js");
   await import("./maintenance.job.js");
   await import("./syllabus.job.js");
+  await import("./entries.job.js");
 }

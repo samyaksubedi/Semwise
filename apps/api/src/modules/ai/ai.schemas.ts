@@ -84,3 +84,19 @@ function strip(node: unknown): unknown {
 export function toStrictJsonSchema(schema: z.ZodType): Record<string, unknown> {
   return strip(z.toJSONSchema(schema, { target: "draft-7" })) as Record<string, unknown>;
 }
+
+export const entryOrganizeSchema = z.strictObject({
+  topics: z
+    .array(
+      z.strictObject({
+        title: z.string().min(1).max(300),
+        subtopics: z.array(z.string().min(1).max(300)).max(30),
+        /** Key of the matching syllabus topic (K1, K2 ...) or null. */
+        syllabusKey: z.string().max(20).nullable(),
+        confidence: z.number().int().min(0).max(100),
+      }),
+    )
+    .max(40),
+  summary: z.string().max(1500),
+});
+export type EntryOrganized = z.infer<typeof entryOrganizeSchema>;

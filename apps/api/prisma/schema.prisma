@@ -57,6 +57,11 @@ model Tenant {
   syllabusPages    SyllabusPage[]
   syllabusChanges  SyllabusChangeRequest[]
   indexedChunks    IndexedChunk[]
+  classSessions    ClassSession[]
+  entries          Entry[]
+  entryVersions    EntryVersion[]
+  entryTopics      EntryTopic[]
+  approvalSettings ApprovalSetting[]
 
   @@map("tenants")
 }
@@ -605,6 +610,7 @@ model Class {
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   teachers   ClassTeacher[]
+  sessions   ClassSession[]
 
   @@unique([subjectId, sectionId])
   @@unique([id, tenantId])
@@ -865,4 +871,154 @@ model IndexedChunk {
 
   @@index([tenantId, sourceType, sourceVersionId, status])
   @@map("indexed_chunks")
+}
+
+// ---------- Class content ----------
+
+/// One lesson of a class on a date. Entries describe what was taught in it.
+model ClassSession {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  classId     String
+  class       Class    @relation(fields: [classId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  /// The day of the lesson in the college timezone (separate from created and approved times).
+  taughtOn    DateTime @db.Date
+  createdById String?
+  createdAt   DateTime @default(now())
+  entries     Entry[]
+
+  @@unique([classId, taughtOn])
+  @@unique([id, tenantId])
+  @@index([tenantId, taughtOn])
+  @@map("class_sessions")
+}
+
+/// What was taught in a session. Content belongs to the class, so it survives a new CR.
+model Entry {
+  id               String         @id @default(cuid())
+  tenantId         String
+  tenant           Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessionId        String
+  session          ClassSession   @relation(fields: [sessionId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  /// The path of the class, repeated for filtering and authorization.
+  classId          String
+  programId        String
+  batchId          String
+  semesterId       String
+  sectionId        String
+  subjectId        String
+  taughtOn         DateTime       @db.Date
+  authorId         String?
+  /// The live (published) version; students and the AI only ever see this one.
+  currentVersionId String?        @unique
+  currentVersion   EntryVersion?  @relation("CurrentEntryVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  takenDownAt      DateTime?
+  takenDownById    String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  versions         EntryVersion[] @relation("EntryVersions")
+
+  @@unique([id, tenantId])
+  @@index([tenantId, sectionId, taughtOn])
+  @@index([tenantId, classId, taughtOn])
+  @@map("entries")
+}
+
+enum EntryVersionStatus {
+  DRAFT
+  /// Waiting for the subject teacher. Hidden from students.
+  PENDING
+  /// Approved; being indexed. The previous version stays live until it is done.
+  APPROVED
+  PUBLISHED
+  REJECTED
+  WITHDRAWN
+  SUPERSEDED
+}
+
+enum InputKind {
+  TEXT
+  VOICE
+  PHOTO
+}
+
+/// One version of an entry. Published versions never change; an edit is a new version.
+model EntryVersion {
+  id                String             @id @default(cuid())
+  tenantId          String
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entryId           String
+  entry             Entry              @relation("EntryVersions", fields: [entryId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  versionNo         Int
+  status            EntryVersionStatus @default(DRAFT)
+  inputKind         InputKind          @default(TEXT)
+  /// The voice transcript or photo file this text came from (feature 7).
+  mediaFileId       String?
+  rawText           String
+  /// { topics: [{ title, subtopics, stableKey, confidence }] }
+  structured        Json               @default("{}")
+  summary           String?
+  organize          JobState           @default(QUEUED)
+  organizeError     String?
+  /// The syllabus version in force on taughtOn, used for the topic mapping.
+  syllabusVersionId String?
+  /// The syllabus has changed since the mapping; some topics may no longer exist.
+  mappingStale      Boolean            @default(false)
+  authorId          String?
+  /// A fix that does not change the topics (spelling, formatting): published without approval.
+  minorEdit         Boolean            @default(false)
+  submittedAt       DateTime?
+  approvedById      String?
+  decidedAt         DateTime?
+  rejectionReason   String?
+  /// Published automatically after the configured wait, without the teacher.
+  unreviewed        Boolean            @default(false)
+  reminderCount     Int                @default(0)
+  lastReminderAt    DateTime?
+  escalatedAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  liveFor           Entry?             @relation("CurrentEntryVersion")
+  topics            EntryTopic[]
+
+  @@unique([entryId, versionNo])
+  @@unique([id, tenantId])
+  @@index([tenantId, status])
+  @@map("entry_versions")
+}
+
+/// The syllabus topics an entry version covers (by stable key, so it survives syllabus versions).
+model EntryTopic {
+  id             String       @id @default(cuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entryVersionId String
+  entryVersion   EntryVersion @relation(fields: [entryVersionId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  topicStableKey String
+  confidence     Int
+
+  @@unique([entryVersionId, topicStableKey])
+  @@index([tenantId, topicStableKey])
+  @@map("entry_topics")
+}
+
+/// Auto-approval: a program default (classId empty) and per-class overrides by the teacher.
+/// A class override wins unless the program default is locked.
+model ApprovalSetting {
+  id                         String   @id @default(cuid())
+  tenantId                   String
+  tenant                     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programId                  String
+  classId                    String?  @unique
+  autoApprove                Boolean
+  locked                     Boolean  @default(false)
+  /// Optional: publish as "not reviewed by teacher" after this many days (program only).
+  unreviewedPublishAfterDays Int?
+  updatedById                String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@index([tenantId, programId])
+  @@map("approval_settings")
 }

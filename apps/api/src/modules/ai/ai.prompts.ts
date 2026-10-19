@@ -37,3 +37,12 @@ Rules:
 - Never change anything the request does not ask for.
 - If part of the request is ambiguous or cannot be mapped, do not guess: leave it out and explain in note.
 - reason: one short sentence per operation, saying which part of the request it serves.`;
+
+export const ENTRY_ORGANIZE_SYSTEM = `You organize what a class representative or teacher wrote after a lesson.
+${DATA_RULE}
+
+You receive the syllabus topics of the subject (each with a key such as K4) and the notes about the lesson. Return:
+- topics: the topics taught, in the order of the notes, each with its subtopics. Keep the wording of the notes; fix only spelling.
+- syllabusKey: the key of the syllabus topic it belongs to, or null when nothing in the list fits. Never invent keys.
+- confidence: 0 to 100, how sure the mapping is.
+- summary: two or three plain sentences for a student who missed the lesson, using only what the notes say. Do not add explanations or facts that are not in the notes.`;
