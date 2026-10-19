@@ -1,0 +1,129 @@
+# Production stack for Coolify ("Docker Compose" build pack, base directory /, this file).
+# Every variable is listed in docs/deploy.md; Coolify shows the ${...} ones in its UI.
+# Only web (port 3000) and api (port 4000) get domains in Coolify. Postgres, Redis and Qdrant
+# publish no ports: they are reachable only on this stack's internal network.
+name: semwise
+
+x-api-env: &api-env
+  NODE_ENV: production
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  CORS_ORIGINS: ${WEB_ORIGIN:?}
+  WEB_ORIGIN: ${WEB_ORIGIN:?}
+  TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+  # The app role: no superuser, no BYPASSRLS. Migrations run as the owner.
+  DATABASE_URL: postgresql://semwise_app:${APP_DB_PASSWORD:?}@postgres:5432/semwise
+  MIGRATION_DATABASE_URL: postgresql://semwise:${POSTGRES_PASSWORD:?}@postgres:5432/semwise
+  REDIS_URL: redis://:${REDIS_PASSWORD:?}@redis:6379/0
+  QDRANT_URL: http://qdrant:6333
+  QDRANT_API_KEY: ${QDRANT_API_KEY:?}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  AI_MODEL_ROUTER: ${AI_MODEL_ROUTER:-gpt-5.6-luna}
+  AI_MODEL_ANSWER: ${AI_MODEL_ANSWER:-gpt-5.4-mini}
+  AI_MODEL_DEEP: ${AI_MODEL_DEEP:-gpt-5.6-terra}
+  AI_MODEL_VISION: ${AI_MODEL_VISION:-gpt-5.6-terra}
+  AI_MODEL_EMBEDDING: ${AI_MODEL_EMBEDDING:-text-embedding-3-small}
+  AI_MODEL_TRANSCRIBE: ${AI_MODEL_TRANSCRIBE:-gpt-transcribe}
+  AI_TENANT_MONTHLY_BUDGET_MICROS: ${AI_TENANT_MONTHLY_BUDGET_MICROS:-50000000}
+  R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+  R2_BUCKET: ${R2_BUCKET:-}
+  MAIL_FROM: ${MAIL_FROM:-}
+  SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  MAIL_DAILY_CAP: ${MAIL_DAILY_CAP:-400}
+  MAIL_PER_MINUTE: ${MAIL_PER_MINUTE:-20}
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${API_ORIGIN:?}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Runs `prisma migrate deploy`, then the server.
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    image: semwise-api:latest
+    restart: unless-stopped
+    environment: *api-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+
+  # Same image, different command. It waits for the API so migrations have run first.
+  worker:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    image: semwise-api:latest
+    command: ["node", "dist/worker.js"]
+    restart: unless-stopped
+    environment: *api-env
+    healthcheck:
+      disable: true
+    depends_on:
+      api:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: semwise
+      POSTGRES_DB: semwise
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init-prod.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U semwise -d semwise"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Queued jobs must never be dropped: AOF on, no eviction, a password.
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - exec redis-server --appendonly yes --maxmemory-policy noeviction --requirepass "$$REDIS_PASSWORD"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", 'redis-cli -a "$$REDIS_PASSWORD" --no-auth-warning ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  qdrant:
+    image: qdrant/qdrant:v1.16.0
+    restart: unless-stopped
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:?}
+    volumes:
+      - qdrantdata:/qdrant/storage
+
+volumes:
+  pgdata:
+  redisdata:
+  qdrantdata:

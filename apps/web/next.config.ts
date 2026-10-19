@@ -1,8 +1,16 @@
+import { resolve } from "node:path";
 import type { NextConfig } from "next";
+
+// Docker builds (apps/web/Dockerfile) set NEXT_OUTPUT_STANDALONE=1 from apps/web: a self-contained
+// server traced from the repo root, so the shared package is included. `next start` is used locally.
+const standalone = process.env.NEXT_OUTPUT_STANDALONE === "1";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  ...(standalone
+    ? { output: "standalone", outputFileTracingRoot: resolve(process.cwd(), "../..") }
+    : {}),
   async headers() {
     return [
       {

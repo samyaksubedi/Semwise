@@ -1,4 +1,4 @@
-# Local development services only. Production runs these as Coolify services (see infra/coolify.md).
+# Local development services only. Production runs these as Coolify services (infra/docker-compose.prod.yml, see docs/deploy.md).
 # Start: pnpm db:up   Stop: pnpm db:down   (data survives in the named volumes)
 name: semwise
 

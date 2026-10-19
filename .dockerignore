@@ -1,13 +1,18 @@
-# The API image is built from the repo root; send it only what it needs.
+# Images are built from the repo root (apps/api/Dockerfile, apps/web/Dockerfile); send only sources.
 **/node_modules
 **/dist
 **/.next
 **/coverage
 **/*.log
+**/*.tsbuildinfo
 **/.env
 **/.env.*
+!**/.env.example
 .git
 .github
-apps/web
 docs
 infra
+apps/api/src/generated
+apps/web/e2e
+apps/web/playwright-report
+apps/web/playwright.config.ts

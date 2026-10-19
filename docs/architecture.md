@@ -72,8 +72,8 @@ semwise/
 │   └── shared/src/               api/ (envelope, errors), schemas/, content/, utils/
 ├── CLAUDE.md                     instructions for Claude Code
 ├── docs/                         Semwise_Project_Context.md, architecture.md, data-model.md, permissions.md, app-flows.md, ui-ux.md, build-prompt.md, local-setup.md
-├── infra/                        docker-compose.dev.yml, postgres-init.sql, coolify.md
-├── scripts/dev.mjs               builds shared, starts API, waits, starts web
+├── infra/                        docker-compose.dev.yml, postgres-init.sql, docker-compose.prod.yml, postgres-init-prod.sh
+├── scripts/                      dev.mjs (builds shared, starts API, waits, starts web), db-backup.mjs
 ├── .github/workflows/ci.yml
 ├── package.json, pnpm-workspace.yaml, tsconfig.base.json
 ├── eslint.config.js, .prettierrc.json, .editorconfig, .node-version
@@ -323,7 +323,7 @@ Everything runs on one VPS, managed by Coolify:
 - Only the web and API services are public; Postgres, Qdrant and Redis are reachable only on the internal Docker network.
 - A single VPS is a single point of failure. Back up Postgres and Qdrant off the machine, and test a restore before launch.
 - Plan at least 4 GB RAM for all services together; Next.js builds are heavy, so build images in CI if the VPS struggles.
-- Details go in `infra/coolify.md`.
+- Details: [deploy.md](deploy.md) (Dockerfiles, `infra/docker-compose.prod.yml`, environment checklist, backups and restore).
 
 ## Build approach
 

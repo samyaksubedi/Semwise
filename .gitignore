@@ -147,3 +147,6 @@ apps/api/src/generated/
 apps/web/next-env.d.ts
 apps/web/e2e/results/
 apps/web/playwright-report/
+
+# Database backups (scripts/db-backup.mjs)
+backups/

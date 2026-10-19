@@ -22,6 +22,7 @@
     "db:migrate": "pnpm --filter @semwise/api db:migrate",
     "db:deploy": "pnpm --filter @semwise/api db:deploy",
     "db:studio": "pnpm --filter @semwise/api db:studio",
+    "db:backup": "node scripts/db-backup.mjs",
     "super-admin:create": "pnpm --filter @semwise/api super-admin:create"
   },
   "devDependencies": {
