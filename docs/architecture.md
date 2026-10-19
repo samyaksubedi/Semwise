@@ -336,7 +336,7 @@ Reason to switch to the web after feature 9: real CRs and teachers can test the 
 - [x] 1. Foundations: auth, tenants, users, memberships, authz, audit, isolation tests, usage ledger
 - [x] 2. Academic structure and tenant provisioning
 - [x] 3. Invitations and enrollment
-- [ ] 4. Classes
+- [x] 4. Classes
 - [ ] 5. Syllabus ingestion
 - [ ] 6. Class entries and approvals
 - [ ] 7. CR voice and photo input

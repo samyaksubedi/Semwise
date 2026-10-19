@@ -3,6 +3,7 @@ import { requireTrustedOrigin } from "./common/middleware/origin-check.js";
 import { userLimit } from "./common/middleware/rate-limit.js";
 import { auditPlatformRouter, auditRouter } from "./modules/audit/index.js";
 import { authRouter, loadSession, requireAuth } from "./modules/auth/index.js";
+import { classesRouter, semesterClassesRouter } from "./modules/classes/index.js";
 import { requireSuperAdmin, resolveTenant } from "./modules/authz/index.js";
 import { healthRouter } from "./modules/health/index.js";
 import {
@@ -74,6 +75,8 @@ export function createV1Router(): Router {
     ["/batches", batchesRouter],
     ["/semesters", semestersRouter],
     ["/semesters", semesterStudentsRouter],
+    ["/semesters", semesterClassesRouter],
+    ["/classes", classesRouter],
     ["/sections", sectionsRouter],
     ["/sections", sectionCrRouter],
     ["/subjects", subjectsRouter],

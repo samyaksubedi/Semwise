@@ -25,29 +25,31 @@ enum TenantStatus {
 
 /// One college. Created by the Super Admin.
 model Tenant {
-  id          String          @id @default(cuid())
-  name        String
-  slug        String          @unique
+  id            String          @id @default(cuid())
+  name          String
+  slug          String          @unique
   /// IANA timezone, e.g. Asia/Kathmandu. "Today" and date ranges are computed in it.
-  timezone    String
-  status      TenantStatus    @default(ACTIVE)
-  settings    Json            @default("{}")
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  memberships Membership[]
-  auditLogs   AuditLog[]
-  aiUsage     AiUsage[]
-  emailLogs   EmailLog[]
-  plan        TenantPlan?
-  quotas      Quota[]
-  programs    Program[]
-  batches     Batch[]
-  semesters   Semester[]
-  sections    Section[]
-  subjects    Subject[]
-  invitations Invitation[]
-  students    StudentRecord[]
-  enrollments Enrollment[]
+  timezone      String
+  status        TenantStatus    @default(ACTIVE)
+  settings      Json            @default("{}")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  memberships   Membership[]
+  auditLogs     AuditLog[]
+  aiUsage       AiUsage[]
+  emailLogs     EmailLog[]
+  plan          TenantPlan?
+  quotas        Quota[]
+  programs      Program[]
+  batches       Batch[]
+  semesters     Semester[]
+  sections      Section[]
+  subjects      Subject[]
+  invitations   Invitation[]
+  students      StudentRecord[]
+  enrollments   Enrollment[]
+  classes       Class[]
+  classTeachers ClassTeacher[]
 
   @@map("tenants")
 }
@@ -79,6 +81,7 @@ model User {
   aiUsage          AiUsage[]
   invitationsSent  Invitation[]    @relation("InvitationInvitedBy")
   studentRecords   StudentRecord[]
+  classesTaught    ClassTeacher[]
 
   @@map("users")
 }
@@ -337,6 +340,7 @@ model Program {
   invitations Invitation[]
   students    StudentRecord[]
   enrollments Enrollment[]
+  classes     Class[]
 
   @@unique([tenantId, code])
   @@unique([id, tenantId])
@@ -362,6 +366,7 @@ model Batch {
   invitations Invitation[]
   students    StudentRecord[]
   enrollments Enrollment[]
+  classes     Class[]
 
   @@unique([programId, name])
   @@unique([id, programId, tenantId])
@@ -394,6 +399,7 @@ model Semester {
   subjects    Subject[]
   invitations Invitation[]
   enrollments Enrollment[]
+  classes     Class[]
 
   @@unique([batchId, number])
   @@unique([id, batchId, programId, tenantId])
@@ -418,6 +424,7 @@ model Section {
   memberships Membership[]
   invitations Invitation[]
   enrollments Enrollment[]
+  classes     Class[]
 
   @@unique([semesterId, name])
   @@unique([id, tenantId])
@@ -443,8 +450,10 @@ model Subject {
   status     StructureStatus @default(ACTIVE)
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
+  classes    Class[]
 
   @@unique([semesterId, code])
+  @@unique([id, semesterId, batchId, programId, tenantId])
   @@index([tenantId, semesterId])
   @@map("subjects")
 }
@@ -563,4 +572,50 @@ model Enrollment {
   @@unique([studentRecordId, semesterId])
   @@index([tenantId, semesterId, sectionId, status])
   @@map("enrollments")
+}
+
+// ---------- Classes ----------
+
+/// One subject offered to one section in one semester. Needs a published syllabus.
+model Class {
+  id         String          @id @default(cuid())
+  tenantId   String
+  tenant     Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  programId  String
+  program    Program         @relation(fields: [programId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  batchId    String
+  batch      Batch           @relation(fields: [batchId, programId, tenantId], references: [id, programId, tenantId], onDelete: Cascade)
+  semesterId String
+  semester   Semester        @relation(fields: [semesterId, batchId, programId, tenantId], references: [id, batchId, programId, tenantId], onDelete: Cascade)
+  subjectId  String
+  subject    Subject         @relation(fields: [subjectId, semesterId, batchId, programId, tenantId], references: [id, semesterId, batchId, programId, tenantId], onDelete: Cascade)
+  sectionId  String
+  section    Section         @relation(fields: [sectionId, semesterId, batchId, programId, tenantId], references: [id, semesterId, batchId, programId, tenantId], onDelete: Cascade)
+  status     StructureStatus @default(ACTIVE)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  teachers   ClassTeacher[]
+
+  @@unique([subjectId, sectionId])
+  @@unique([id, tenantId])
+  @@index([tenantId, semesterId])
+  @@index([tenantId, sectionId])
+  @@map("classes")
+}
+
+/// The subject teacher(s) of a class.
+model ClassTeacher {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class    @relation(fields: [classId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([classId, userId])
+  @@index([tenantId, userId])
+  @@map("class_teachers")
 }

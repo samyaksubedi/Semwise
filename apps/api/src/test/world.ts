@@ -100,3 +100,73 @@ export function agents(app: Express) {
     return agent;
   };
 }
+
+/** A teacher of the college (TEACHER role, no classes yet). */
+export async function addTeacher(college: College): Promise<User> {
+  const u = await user();
+  await addMembership(u.id, college.tenantId, "TEACHER");
+  return u;
+}
+
+/** A joined student placed in a section of the college's active semester. */
+export async function addStudent(
+  college: College,
+  section: keyof College["sections"] = "a",
+  options: { cr?: boolean } = {},
+): Promise<User & { studentId: string }> {
+  const u = await user();
+  const tenantId = college.tenantId;
+  const sectionId = college.sections[section];
+  const record = await withSystem(async (db) => {
+    const r = await db.studentRecord.create({
+      data: {
+        tenantId,
+        programId: college.programs.p1,
+        batchId: college.batch,
+        userId: u.id,
+        email: u.email,
+        rollNo: `R-${u.id.slice(-8).toUpperCase()}`,
+        status: "ACTIVE",
+      },
+    });
+    await db.enrollment.create({
+      data: {
+        tenantId,
+        programId: college.programs.p1,
+        batchId: college.batch,
+        semesterId: college.semester,
+        sectionId,
+        studentRecordId: r.id,
+      },
+    });
+    return r;
+  });
+  await addMembership(u.id, tenantId, "STUDENT");
+  if (options.cr) await addMembership(u.id, tenantId, "CR", { sectionId });
+  return { ...u, studentId: record.id };
+}
+
+/** A class of the college (bypassing the syllabus gate, which tests of later features own). */
+export async function addClass(
+  college: College,
+  subject: keyof College["subjects"],
+  section: keyof College["sections"],
+  teacherIds: string[],
+): Promise<string> {
+  const c = await withSystem((db) =>
+    db.class.create({
+      data: {
+        tenantId: college.tenantId,
+        programId: college.programs.p1,
+        batchId: college.batch,
+        semesterId: college.semester,
+        subjectId: college.subjects[subject],
+        sectionId: college.sections[section],
+        teachers: {
+          create: teacherIds.map((userId, i) => ({ userId, isPrimary: i === 0 })),
+        },
+      },
+    }),
+  );
+  return c.id;
+}

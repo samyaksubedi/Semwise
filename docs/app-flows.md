@@ -67,6 +67,8 @@ As built: a CSV needs the columns email, roll number and section (name optional)
 2. The class is created only if the subject has a **published syllabus**.
 3. The teacher sees the class in their area; the section's CR sees all classes of their section.
 
+As built: the published-syllabus rule is checked through a gate the syllabus module provides (feature 5); until a subject has a published syllabus, creating its class answers 409. Reassigning the teacher moves access with the class at once. `GET /v1/classes/mine` lists the classes a person teaches, represents (CR) or attends (student).
+
 ## 5. Syllabus ingestion
 
 1. Program Admin chooses batch and semester and uploads one syllabus PDF for a subject (direct to R2 via a signed URL; type and size checked).

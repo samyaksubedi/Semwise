@@ -1,4 +1,5 @@
-import { registerEnrollmentLoader } from "./modules/authz/index.js";
+import { registerEnrollmentLoader, registerTeachingLoader } from "./modules/authz/index.js";
+import { classesService } from "./modules/classes/index.js";
 import { enrollmentsService } from "./modules/enrollments/index.js";
 import { registerAcceptHandler } from "./modules/invitations/index.js";
 
@@ -15,5 +16,6 @@ export function wireModules(): void {
   registerEnrollmentLoader((tenantId, userId) =>
     enrollmentsService.actorEnrollments(tenantId, userId),
   );
+  registerTeachingLoader((tenantId, userId) => classesService.teaching(tenantId, userId));
   registerAcceptHandler("STUDENT", enrollmentsService.acceptStudent);
 }
