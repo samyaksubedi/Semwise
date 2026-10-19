@@ -123,7 +123,7 @@ export interface EntryView {
   takenDown: boolean;
   /** What students see. */
   live: EntryVersionView | null;
-  /** A newer draft, pending or rejected version, shown to those who may see it. */
+  /** A newer draft, pending, rejected or withdrawn version, shown to those who may see it. */
   latest: EntryVersionView | null;
 }
 
