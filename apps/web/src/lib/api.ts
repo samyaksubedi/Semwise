@@ -1,5 +1,6 @@
 import type { ApiErrorBody, ApiIssue, ErrorCode } from "@semwise/shared";
 import { API_URL } from "./env";
+import { t } from "./strings";
 
 /** An error answered by the API (or a network failure, as code NETWORK). */
 export class ApiError extends Error {
@@ -64,11 +65,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     });
   } catch (err) {
     if ((err as Error).name === "AbortError") throw err;
-    throw new ApiError(
-      0,
-      "NETWORK",
-      "You seem to be offline. Check your connection and try again.",
-    );
+    throw new ApiError(0, "NETWORK", t.network.offline);
   }
   if (res.status === 204) return undefined as T;
   const json = (await res.json().catch(() => null)) as { data?: T } | ApiErrorBody | null;
@@ -77,7 +74,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     throw new ApiError(
       res.status,
       error?.code ?? "INTERNAL",
-      error?.message ?? "Something went wrong. Try again.",
+      error?.message ?? t.network.failed,
       error?.details ?? [],
       error?.requestId ?? null,
     );
@@ -91,7 +88,7 @@ export async function putToStorage(url: string, file: Blob, contentType: string)
   try {
     res = await fetch(url, { method: "PUT", body: file, headers: { "Content-Type": contentType } });
   } catch {
-    throw new ApiError(0, "NETWORK", "The upload did not reach storage. Try again.");
+    throw new ApiError(0, "NETWORK", t.network.uploadFailed);
   }
-  if (!res.ok) throw new ApiError(res.status, "INTERNAL", "The upload was refused. Try again.");
+  if (!res.ok) throw new ApiError(res.status, "INTERNAL", t.network.uploadRefused);
 }

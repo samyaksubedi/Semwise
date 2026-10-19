@@ -109,7 +109,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         />
         <main
           id="main"
-          className="pb-tabbar mx-auto w-full max-w-5xl flex-1 px-4 pt-4 md:px-8 md:pt-8 md:pb-10"
+          className={cn(
+            "pb-tabbar mx-auto w-full flex-1 px-4 pt-4 md:px-8 md:pt-8 md:pb-10",
+            // The syllabus review shows three panels side by side on wide screens.
+            pathname.startsWith("/admin/syllabus/") ? "max-w-[1400px]" : "max-w-5xl",
+          )}
         >
           {forbidden ? (
             <EmptyState
