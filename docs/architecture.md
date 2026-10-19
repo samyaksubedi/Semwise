@@ -71,7 +71,7 @@ semwise/
 ├── packages/
 │   └── shared/src/               api/ (envelope, errors), schemas/, content/, utils/
 ├── CLAUDE.md                     instructions for Claude Code
-├── docs/                         Semwise_Project_Context.md, architecture.md, data-model.md, permissions.md, app-flows.md, ui-ux.md, local-setup.md, deploy.md
+├── docs/                         Semwise_Project_Context.md, architecture.md, data-model.md, permissions.md, app-flows.md, ui-ux.md, local-setup.md, deploy.md, roadmap-v2.md
 ├── infra/                        docker-compose.dev.yml, postgres-init.sql, docker-compose.prod.yml, postgres-init-prod.sh
 ├── scripts/                      dev.mjs (builds shared, starts API, waits, starts web), db-backup.mjs
 ├── .github/workflows/ci.yml
@@ -110,33 +110,32 @@ Rules (the blog's, plus the multi-tenant ones):
 
 ## API modules
 
-| Module                                                         | What it does                                                                                                         | Feature #  |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `health`                                                       | `/v1/health` (alive) and `/v1/health/ready` (database, Redis, Qdrant)                                                | 0          |
-| `auth`                                                         | Login, logout, session, password reset, invite acceptance; sessions are Postgres rows with an HttpOnly cookie        | 1          |
-| `tenants`                                                      | Super Admin: create and manage colleges, provision the first University Admin, tenant settings (timezone)            | 1, 2       |
-| `users`                                                        | The single User entity                                                                                               | 1          |
-| `memberships`                                                  | Roles with scope (tenant, program, section, class), including CR grants                                              | 1, 3       |
-| `authz`                                                        | The permission matrix and `can(...)` checks                                                                          | 1          |
-| `audit`                                                        | Audit log of admin actions, approvals, takedowns, syllabus and scope changes                                         | 1          |
-| `usage`                                                        | AI usage ledger, quotas, budgets, plan limits                                                                        | 1, 15      |
-| `structure` (programs, batches, semesters, sections, subjects) | Academic structure, in one module because the five share path loading and authorization; Program Admin invites       | 2          |
-| `invitations`                                                  | Student, teacher and admin email invites                                                                             | 3          |
-| `enrollments`                                                  | Semester-specific section assignment with history                                                                    | 3          |
-| `classes`                                                      | Subject x section x teacher                                                                                          | 4          |
-| `files`                                                        | Signed uploads and downloads on Cloudflare R2 for PDFs, audio and images                                             | 5          |
-| `syllabus`                                                     | PDF extraction, draft tree, natural-language change requests (as diffs), versions, publish, copy from previous batch | 5          |
-| `knowledge`                                                    | Chunking, embeddings, Qdrant sync, live-version handling                                                             | 5, 6       |
-| `ai`                                                           | Provider wrapper, prompts, router, model selection, metering                                                         | 5, 8       |
-| `sessions`                                                     | Class sessions and CR/teacher entries, versions, topic mapping, duplicate detection                                  | 6          |
-| `approvals`                                                    | Approval settings (default, override, lock), queue, reminders, escalation                                            | 6          |
-| `media`                                                        | CR voice transcription and photo reading, private readings, retention of media                                       | 7          |
-| `notifications`                                                | Email delivery (Nodemailer) through a throttled queue, with the protections listed under Email                       | 3, 6       |
-| `chat`                                                         | Student Q&A, conversations, syllabus classification, labeled answers, citations                                      | 8          |
-| `catchup`                                                      | Date-range summaries                                                                                                 | 9          |
-| `notes`                                                        | Private notes, inbox, "Check my notes"                                                                               | 10         |
-| `exams`                                                        | Exams, per-subject entries, scope versions, natural-language scope input                                             | 11         |
-| `study`                                                        | Study plan, study cards, question bank, rubric grading, mastery                                                      | 12, 13, 14 |
+| Module                                                         | What it does                                                                                                         | Feature # |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------- |
+| `health`                                                       | `/v1/health` (alive) and `/v1/health/ready` (database, Redis, Qdrant)                                                | 0         |
+| `auth`                                                         | Login, logout, session, password reset, invite acceptance; sessions are Postgres rows with an HttpOnly cookie        | 1         |
+| `tenants`                                                      | Super Admin: create and manage colleges, provision the first University Admin, tenant settings (timezone)            | 1, 2      |
+| `users`                                                        | The single User entity                                                                                               | 1         |
+| `memberships`                                                  | Roles with scope (tenant, program, section, class), including CR grants                                              | 1, 3      |
+| `authz`                                                        | The permission matrix and `can(...)` checks                                                                          | 1         |
+| `audit`                                                        | Audit log of admin actions, approvals, takedowns, syllabus and scope changes                                         | 1         |
+| `usage`                                                        | AI usage ledger, quotas, budgets, plan limits                                                                        | 1, 15     |
+| `structure` (programs, batches, semesters, sections, subjects) | Academic structure, in one module because the five share path loading and authorization; Program Admin invites       | 2         |
+| `invitations`                                                  | Student, teacher and admin email invites                                                                             | 3         |
+| `enrollments`                                                  | Semester-specific section assignment with history                                                                    | 3         |
+| `classes`                                                      | Subject x section x teacher                                                                                          | 4         |
+| `files`                                                        | Signed uploads and downloads on Cloudflare R2 for PDFs, audio and images                                             | 5         |
+| `syllabus`                                                     | PDF extraction, draft tree, natural-language change requests (as diffs), versions, publish, copy from previous batch | 5         |
+| `knowledge`                                                    | Chunking, embeddings, Qdrant sync, live-version handling                                                             | 5, 6      |
+| `ai`                                                           | Provider wrapper, prompts, router, model selection, metering                                                         | 5, 8      |
+| `sessions`                                                     | Class sessions and CR/teacher entries, versions, topic mapping, duplicate detection                                  | 6         |
+| `approvals`                                                    | Approval settings (default, override, lock), queue, reminders, escalation                                            | 6         |
+| `media`                                                        | CR voice transcription and photo reading, private readings, retention of media                                       | 7         |
+| `notifications`                                                | Email delivery (Nodemailer) through a throttled queue, with the protections listed under Email                       | 3, 6      |
+| `chat`                                                         | Student Q&A, conversations, syllabus classification, labeled answers, citations                                      | 8         |
+| `catchup`                                                      | Date-range summaries                                                                                                 | 9         |
+
+The modules for features 10 to 16 are planned in [roadmap-v2.md](roadmap-v2.md).
 
 ## Request pipeline
 
@@ -181,10 +180,9 @@ Prices are per 1M tokens unless stated, taken from third-party price trackers da
 | Router, classification, date parsing, language detection, summaries                   | GPT-5.6 Luna           | $0.20              | $1.20  | $0.02        | Cheapest current model                                                                                                              |
 | Student answers (grounded in retrieved content)                                       | GPT-5.4 Mini           | $0.75              | $4.50  | $0.075       | Escalates to Terra for complex or code questions                                                                                    |
 | Hard questions, grading, syllabus extraction, study material, note fact-check, vision | GPT-5.6 Terra          | $2.00              | $12.00 | $0.20        | Confirm image input in testing; fall back to Mini if enough                                                                         |
-| Embeddings                                                                            | text-embedding-3-small | $0.02              | n/a    | n/a          | English-first content; try -large ($0.13) only if the Nepali test shows retrieval misses                                            |
+| Embeddings                                                                            | text-embedding-3-small | $0.02              | n/a    | n/a          | English-first content (the Nepali beta may need -large: [roadmap-v2.md](roadmap-v2.md))                                             |
 | Voice dictation                                                                       | gpt-transcribe         | $0.0045 per minute | n/a    | n/a          | Benchmark against gpt-4o-mini-transcribe (about $0.003 per minute) and gpt-4o-transcribe (about $0.006 per minute) on real CR clips |
 
-- The Batch API gives a 50% discount with a 24-hour window; study cards and question banks use it.
 - Do **not** use GPT-5.4 Nano: it is marked deprecated, with API removal planned for April 1, 2027. GPT-6 Astra and GPT-5.5 Pro cost far more and are not needed.
 
 ### Unit costs (assumption-based)
@@ -195,14 +193,10 @@ Prices are per 1M tokens unless stated, taken from third-party price trackers da
 | Answer by Mini                                                            | 4,000 in, 500 out                      | $0.0053          |
 | Answer by Terra                                                           | 4,000 in, 500 out                      | $0.014           |
 | **Average Q&A question** (80% Mini, 20% Terra, router, +25% chat history) |                                        | **about $0.009** |
-| Grading one study-room answer (Terra)                                     | 1,500 in, 500 out                      | $0.009           |
-| Checking one note (Terra)                                                 | 2,000 in, 600 out                      | $0.011           |
 | Syllabus extraction plus review requests, per subject (Terra)             | 20k in 4k out, then 5 x (6k in 1k out) | about $0.21      |
 | Organizing and summarizing one CR entry (Mini plus Luna)                  | 3k in, 900 out                         | $0.005           |
 | Dictation of 2 minutes (gpt-transcribe)                                   | 2 minutes                              | $0.009           |
 | Reading a photo (Terra vision)                                            | about 2k in, 400 out                   | about $0.009     |
-| Study card per topic (Terra; half price with Batch)                       | 3k in, 1k out                          | $0.018 ($0.009)  |
-| Question bank per topic, 10 questions with rubrics (Terra; Batch)         | 3k in, 3k out                          | $0.042 ($0.021)  |
 | Embedding a 40-page syllabus                                              | about 20k tokens                       | $0.0004          |
 
 - The router escalates a question from Mini to Terra when it detects a complex, multi-step or code question.
@@ -210,7 +204,7 @@ Prices are per 1M tokens unless stated, taken from third-party price trackers da
 
 ## Background jobs (BullMQ on Redis)
 
-Long or failure-prone work runs as retryable jobs: PDF extraction (scans included), transcription, photo reading, embedding, summaries, study-card generation, emails, reminders and escalations.
+Long or failure-prone work runs as retryable jobs: PDF extraction (scans included), transcription, photo reading, embedding, summaries, emails, reminders and escalations.
 
 - The API only enqueues jobs. A separate **worker** process (`src/worker.ts`, same image, different start command) runs them, so slow AI work never blocks web requests.
 - One queue per job family, with its own concurrency and rate limit (OpenAI calls, and email sending, are rate-limited).
@@ -256,23 +250,20 @@ Error codes are shared between API and web.
 
 ## Web app layout
 
-Next.js App Router, with route groups per area and feature code in `src/features`, as in the blog:
+Next.js App Router, with route groups and feature code in `src/features`, as in the blog:
 
 ```text
 apps/web/src/
 ├── app/
-│   ├── (auth)/            login, accept-invite, reset-password
-│   ├── (student)/         chat, catch-up, notes, exams, study room
-│   ├── (cr)/              class entries (text, voice, photo)
-│   ├── (teacher)/         approval queue, class content, exam scope for own subjects
-│   ├── (admin)/           program and university admin: structure, syllabus, students, exams, settings
-│   ├── (platform)/        super admin: tenants
-│   ├── api/               route handlers (for example cache revalidation)
-│   └── layout.tsx, not-found.tsx, globals.css
-├── components/layout/     headers, navigation, role switcher
-├── features/<area>/       student/, cr/, teacher/, admin/, syllabus/, exams/, study/, shared ui/
-├── lib/                   api.ts, env.ts, format.ts, cn.ts
-└── styles/                tokens.css, prose.css
+│   ├── (auth)/            login, choose-college, accept-invite, forgot-password, reset-password
+│   ├── (app)/             the signed-in shell: chat, catchup (student); today, entries (CR);
+│   │                      approvals, classes (teacher); admin/ (overview, structure, students,
+│   │                      classes, syllabus, settings); platform/colleges (Super Admin); profile
+│   └── layout.tsx, page.tsx, not-found.tsx, globals.css
+├── components/            layout/ (app shell), ui/ (buttons, fields, sheets, tabs, states, toasts ...)
+├── features/<area>/       admin/, auth/, chat/, entries/, platform/, profile/, syllabus/, teacher/
+├── lib/                   api.ts, env.ts, format.ts, nav.ts, session.tsx, strings.ts, upload.ts ...
+└── styles/                tokens.css
 ```
 
 Menus and routes only reflect roles; the API enforces permissions regardless of what the UI shows.
@@ -341,13 +332,7 @@ One feature at a time, backend first. A feature is finished when its API, worker
 - [x] 9. **Catch-up and date-based questions.**
 - [x] Web screens for features 1 to 9: shell, sign-in, invites, profile; admin structure, people, classes, settings; syllabus review; CR entry (text, voice, photo) and teacher approvals; student chat and catch-up; Super Admin colleges page.
 - [x] V1 hardening: forced RLS and startup role check, Playwright browser tests, keyboard and screen-reader pass, Dockerfiles, production compose and backups.
-- [ ] 10. Student notes and "Check my notes"
-- [ ] 11. Exams and exam scope, plus "what comes in the exam?"
-- [ ] 12. Study plan
-- [ ] 13. Study cards
-- [ ] 14. Study room: question generation, rubric grading, mastery
-- [ ] 15. Usage dashboards, quotas and plan limits
-- [ ] 16. Nepali beta, only if the language test passes
+- [ ] 10 to 16. V2: notes, exams and exam scope, study plan, study cards, study room, usage dashboards, Nepali beta. Plan, order and open questions: [roadmap-v2.md](roadmap-v2.md)
 - [ ] 17. Deploy: a pilot after V1 ([deploy.md](deploy.md)), then again after V2
 
 ## Status
@@ -389,7 +374,7 @@ Features 0 to 9 with their web screens, and the hardening pass, all committed on
 ### Next
 
 1. Deploy to a pilot college ([deploy.md](deploy.md)).
-2. V2 (features 10 to 16), each followed by its screens.
+2. V2 (features 10 to 16), each followed by its screens: settle each feature's open questions in [roadmap-v2.md](roadmap-v2.md) first.
 
 ### Working notes
 

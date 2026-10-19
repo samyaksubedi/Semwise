@@ -67,25 +67,16 @@ Roles: **SA** Super Admin, **UA** University Admin, **PA** Program Admin, **T** 
 | Set auto-approval default and lock it   | -   | Y   | prog | -                           | -   | -   |
 | Override auto-approval for a class      | -   | -   | prog | own classes (unless locked) | -   | -   |
 
-## Exams
-
-| Action                                      | SA  | UA  | PA   | T            | CR        | S         |
-| ------------------------------------------- | --- | --- | ---- | ------------ | --------- | --------- |
-| Create and edit exams and subject schedules | -   | Y   | prog | -            | -         | -         |
-| Set and publish exam scope                  | -   | Y   | prog | own subjects | -         | -         |
-| Read published exam scope and dates         | -   | Y   | prog | own subjects | own batch | own batch |
-
 ## Student features
 
-| Action                                       | SA  | UA  | PA  | T                 | CR  | S   |
-| -------------------------------------------- | --- | --- | --- | ----------------- | --- | --- |
-| Ask questions in chat, use catch-up          | -   | -   | -   | -                 | own | own |
-| Read or delete a chat conversation           | -   | -   | -   | -                 | own | own |
-| Notes, "Check my notes"                      | -   | -   | -   | -                 | own | own |
-| Study plan, study cards, study room, mastery | -   | -   | -   | -                 | own | own |
-| See which topics students find hard          | -   | agg | agg | agg (own classes) | -   | -   |
+| Action                              | SA  | UA  | PA  | T   | CR  | S   |
+| ----------------------------------- | --- | --- | --- | --- | --- | --- |
+| Ask questions in chat, use catch-up | -   | -   | -   | -   | own | own |
+| Read or delete a chat conversation  | -   | -   | -   | -   | own | own |
 
 CR rows for student features show **own** because a CR is also a student in their own section.
+
+The rows for V2 features (notes, exams and exam scope, study plan, cards, study room, mastery, aggregates of hard topics) are in [roadmap-v2.md](roadmap-v2.md); they move here when each feature is built, and until then the rule of deny by default applies.
 
 ## Files
 

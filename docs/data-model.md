@@ -71,34 +71,16 @@ Resolution of auto-approval: a class setting overrides the program default, unle
 
 `IndexedChunk`: tenantId, sourceType (SYLLABUS_TOPIC, ENTRY_VERSION, NOTE), sourceId, sourceVersionId, ownerId? (for private notes), qdrantPointId, embeddingModel, embeddingVersion, status (LIVE, DELETED). It maps Postgres records to Qdrant points so superseded vectors can always be found and deleted.
 
-## Chat and notes (private to the student)
+## Chat (private to the student)
 
-| Table          | Key fields                                                                                                        |
-| -------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `Conversation` | tenantId, userId, title, pinnedSubjectId?, includePast, summary, summarizedCount                                  |
-| `Message`      | conversationId, role, content, scope, language, citations (json), labels (json), model, requestId (ledger rows)   |
-| `Note`         | tenantId, userId, subjectId?, topicStableKey?, sessionId?, body, source (MANUAL, AI_ANSWER), state (INBOX, FILED) |
-| `NoteCheck`    | noteId, result (json), createdAt                                                                                  |
+| Table          | Key fields                                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------------------------------- |
+| `Conversation` | tenantId, userId, title, pinnedSubjectId?, includePast, summary, summarizedCount                                |
+| `Message`      | conversationId, role, content, scope, language, citations (json), labels (json), model, requestId (ledger rows) |
 
-## Exams
+## V2 tables
 
-| Table              | Key fields                                                                                                  |
-| ------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `Exam`             | tenantId, batchId, semesterId, name, kind (INTERNAL, EXTERNAL), status                                      |
-| `ExamSubject`      | examId, subjectId, date, marks, durationMinutes, scopeMode (FULL_SYLLABUS, SELECTED), currentScopeVersionId |
-| `ExamScopeVersion` | examSubjectId, versionNo, inputText?, status, setBy, publishedAt                                            |
-| `ExamScopeTopic`   | scopeVersionId, topicStableKey                                                                              |
-
-## Study
-
-| Table           | Key fields                                                                                                      |
-| --------------- | --------------------------------------------------------------------------------------------------------------- |
-| `StudyPlan`     | tenantId, userId, examId?, hoursPerDay, status                                                                  |
-| `StudyPlanItem` | planId, topicStableKey, plannedDate, status                                                                     |
-| `StudyCard`     | topicStableKey, syllabusVersionId, body, sourceHash, status (shared by all students)                            |
-| `Question`      | topicStableKey, syllabusVersionId, kind, prompt, rubric (json), marks, sourceHash, status, reportCount (shared) |
-| `Attempt`       | userId, questionId, answerKind (TEXT, CODE), answerText, result (json), score, usageId (private)                |
-| `Mastery`       | userId, topicStableKey, score, updatedAt (private)                                                              |
+Notes, exams and exam scope, study plans, study cards, questions, attempts and mastery are planned in [roadmap-v2.md](roadmap-v2.md). Each table moves here when its feature is built.
 
 ## Operations
 

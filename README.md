@@ -26,4 +26,5 @@ One VPS with Coolify: [docs/deploy.md](docs/deploy.md).
 | [ui-ux.md](docs/ui-ux.md)                                     | Web UI and UX rules                                 |
 | [local-setup.md](docs/local-setup.md)                         | Running and testing locally                         |
 | [deploy.md](docs/deploy.md)                                   | Production deploy, environment, backups             |
+| [roadmap-v2.md](docs/roadmap-v2.md)                           | V2 plan (features 10 to 16) and its open questions  |
 | [CLAUDE.md](CLAUDE.md)                                        | Instructions for Claude Code                        |

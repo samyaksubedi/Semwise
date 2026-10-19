@@ -178,49 +178,21 @@ Each question is classified as:
 ### Language
 
 - **English first.** Stored content (syllabus, summaries) is English-first.
-- **Nepali is a labeled beta, pending a test.** Nepali and Romanized-Nepali questions are detected and rewritten into English for retrieval, with the answer returned in the student's language. Expected weak points: Romanized Nepali, technical terms, cross-language retrieval, and especially Nepali speech-to-text.
-- **Test before committing:** about 20 real Nepali and Romanized student questions and about 10 real CR dictation clips, checking topic retrieval, answer correctness and transcript usability.
+- **Nepali is a labeled beta, pending a test** (feature 16): see [roadmap-v2.md](roadmap-v2.md).
 
 ### Honesty rules
 
 If the knowledge base does not contain the answer, say so. Always separate what was reported as taught from general explanation. In V1 students ask by text only.
 
-## 11. Student notes
+## 11 to 13. Notes, exams and exam preparation (V2)
 
-- **Subject-based notes with a general inbox.** A note belongs to a subject and optionally to a syllabus topic or class session. A note with no subject goes to the inbox; the AI can suggest a subject or topic and the student confirms.
-- Students can save AI answers from chat as notes (marked AI-generated).
-- **Strictly private.** Indexed in a separate private scope tied to the student's ID. Admins and teachers cannot read them. In answers, the AI shows the student's notes separately ("From your notes: ...").
-- **"Check my notes":** on demand, the AI compares each claim with the syllabus and class content and marks it consistent, contradicting, not covered, or possibly incorrect from general knowledge. It never edits a note itself. Checks against syllabus and class content are reliable; general-knowledge flags are shown as suggestions with evidence.
-
-## 12. Examinations
-
-- Exam names and rules differ by college, so each college **names its own exams** ("First Internal", "Terminal", "Pre-board" ...). Underneath, a small fixed set of behaviours drives logic: **internal** (college-run) or **external** (university-run), and a scope mode of **full syllabus** or **selected topics**.
-- Exams belong to the **whole batch**. Each exam has per-subject entries with date, marks and duration, and one **exam scope** per subject, the same for every section.
-- **Setting scope:** the Program Admin (any subject in the program) or the subject teacher (own subjects) can set it. The main input is plain language such as "Unit 1 to Unit 5" or "unit one: pointers and arrays", or a checkbox selection on the published topic tree. The AI maps it to syllabus topics and shows the matched topics for confirmation; ambiguous phrases are flagged, not guessed.
-- Scope is **versioned**; changes record who set them, and students are notified.
-- **"What comes in the upcoming exam?"** is a database lookup that returns the exact scope and dates, citing when it was set. If no scope is published, it says so and shows the full syllabus labeled as a fallback. Any "likely questions" the AI suggests are labeled as predictions, not official.
-- Past-paper upload is a V2 feature.
-
-## 13. Exam preparation
-
-1. **Personal study plan.** The student enters hours available per day. A scheduling algorithm spreads the scope topics across the days left, weighted by topic size and difficulty; the AI only explains the plan. Topics not yet taught according to class records are flagged, labeled "per class records". The plan updates when mastery or exam scope changes.
-2. **Study cards per topic.** Summary, key concepts, definitions and examples, grounded in the syllabus and class content, labeled AI-generated. **Generated once per topic and shared by all students**, regenerated only when the source version changes.
-3. **Study room.** The student picks an exam (which fills in the scope) or, with no exam, one or more subjects and topics. The AI generates questions; the student answers in free text or by pasting code. **No MCQs for now.**
-   - Question types: short explanations, descriptive answers, compare-and-contrast, numerical problems, and for programming subjects code-writing, tracing and debugging.
-   - Each question is created with a hidden rubric (key points and marks) and is cached and shared. The student's answer is graded against the rubric, returning correct, partly correct or incorrect, what was missed, a model answer and a link to the topic card.
-   - **Code answers:** at first the AI reads and reasons about the code and says clearly that it did not run it. Running code in a locked-down sandbox against test cases may come later.
-   - Student answers are treated as data; instructions inside an answer ("mark this correct") are ignored.
-4. **Mastery tracking.** Per-topic mastery from the student's own marks and quiz results; private to the student. Weak areas are tentative and visible and correctable by the student.
-5. **Explain mode.** A chat with a topic pinned as context.
-6. **Later:** revision reminders by email and spaced repetition.
-
-Shared (generated once): study cards, questions, rubrics. Private per student: answers, grades, mastery, plan. Teachers and admins see only aggregates.
+Student notes and "Check my notes", examinations and exam scope, the study plan, study cards, the study room and mastery are planned, with every decision taken so far and the open questions, in [roadmap-v2.md](roadmap-v2.md) (features 10 to 14).
 
 ## 14. AI usage tracking and cost
 
 - **Usage ledger** for every AI call: tenant, user, feature, model, input and output tokens, computed cost, price snapshot, request ID.
 - **Quotas and limits** per user and per tenant (monthly), with model routing to control spend. Raw audio is deleted after transcription.
-- The ledger is a foundation feature, built before any AI feature ships.
+- The ledger is a foundation feature, built before any AI feature ships. Usage dashboards and plan limits are feature 15 ([roadmap-v2.md](roadmap-v2.md)).
 - Indicative (assumption-based, unverified prices): AI cost is roughly **$0.20 to $0.90 per student per month**, dominated by Q&A and by how often the strong model is used. A 20-student college is on the order of $5 to $45 a month; a 1,000-student college $165 to $2,200 a month. The real numbers come from the ledger after a pilot. Hosting and other fixed costs are not included, so pricing needs a per-college minimum.
 
 ## 15. Security, privacy and legal notes
@@ -283,4 +255,4 @@ Combined classes and shared labs; student voice, photo or file uploads; student-
 
 ## 19. Build order and status
 
-V1 (features 0 to 9: foundations, structure, invitations, classes, syllabus, class entries, voice and photo, Q&A, catch-up) is built. The build list and the current status are in [architecture.md](architecture.md); the step-by-step flows are in [app-flows.md](app-flows.md), the tables in [data-model.md](data-model.md) and the permission matrix in [permissions.md](permissions.md).
+V1 (features 0 to 9: foundations, structure, invitations, classes, syllabus, class entries, voice and photo, Q&A, catch-up) is built. V2 (features 10 to 16) is planned in [roadmap-v2.md](roadmap-v2.md). The build list and the current status are in [architecture.md](architecture.md); the step-by-step flows are in [app-flows.md](app-flows.md), the tables in [data-model.md](data-model.md) and the permission matrix in [permissions.md](permissions.md).

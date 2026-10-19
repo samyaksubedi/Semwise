@@ -14,12 +14,13 @@ Semwise is a multi-tenant SaaS for colleges: an academic "memory" built from off
 | `docs/ui-ux.md`                   | Web UI/UX rules (mobile first)                                                                     |
 | `docs/local-setup.md`             | Running and testing locally                                                                        |
 | `docs/deploy.md`                  | Production deploy, environment, backups                                                            |
+| `docs/roadmap-v2.md`              | V2 plan (features 10 to 16): flows, tables, permissions, costs, open questions                     |
 
 If code and docs disagree, stop and ask; do not silently pick one. When a decision changes, update the docs in the same commit.
 
 ## How to work
 
-1. **One feature at a time**, in the order of the build list in `docs/architecture.md`. Finish a feature completely (API, worker jobs, shared schemas, migration, tests, docs) before starting the next. V1 means features 0 to 9; backend first, then the web screens.
+1. **One feature at a time**, in the order of the build list in `docs/architecture.md`. Finish a feature completely (API, worker jobs, shared schemas, migration, tests, docs) before starting the next. V1 means features 0 to 9 (built); V2 is features 10 to 16, planned in `docs/roadmap-v2.md`. Backend first, then the web screens. Settle a V2 feature's open questions before building it, and move its flow, tables and permission rows into the main docs as it is built.
 2. Before coding a feature: read its flow in `app-flows.md`, its tables in `data-model.md`, and its rows in `permissions.md`. Create a short task list.
 3. Definition of done for a feature: `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test` and `pnpm build` pass; new tests cover the happy path, validation errors, permission denials, and **cross-tenant, cross-section and cross-student access**; the build checklist in `docs/architecture.md` is ticked; `docs/local-setup.md` is current.
 4. Commit after each feature (and at sensible checkpoints inside big features). Use conventional messages such as `feat(syllabus): ...`. Never commit secrets, `.env` files or generated build output.

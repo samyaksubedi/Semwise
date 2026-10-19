@@ -30,18 +30,19 @@ Defined once in `styles/tokens.css` as CSS variables (same approach as the blog)
 | Tablet and desktop | Left **sidebar** with the same items, collapsible; content centred with a readable max width   |
 
 - Tabs per role (V1):
-  - **Student:** Chat, Catch-up, Exams (later), Notes (later), Profile.
+  - **Student:** Chat, Catch-up, Profile.
   - **CR:** Today (new entry), My entries, plus the student tabs.
-  - **Teacher:** Approvals, My classes, Exams (later).
+  - **Teacher:** Approvals, My classes.
   - **Program and University Admin:** Overview, Structure, Syllabus, Students, Classes, Settings; usage under Settings.
-  - **Super Admin:** Colleges, Usage (later). As built: sign-in lands on `/platform/colleges`, a list of colleges (name, slug, status, admin count, pending admin invites) with a note that college content is not shown; a sheet per college lists its University Admins and offers inviting another one and suspend or reactivate (each confirmed). Creating a college asks for the name, an optional slug, a timezone from a grouped IANA list with UTC offsets, and the first University Admin's email and name.
+  - **Super Admin:** Colleges. As built: sign-in lands on `/platform/colleges`, a list of colleges (name, slug, status, admin count, pending admin invites) with a note that college content is not shown; a sheet per college lists its University Admins and offers inviting another one and suspend or reactivate (each confirmed). Creating a college asks for the name, an optional slug, a timezone from a grouped IANA list with UTC offsets, and the first University Admin's email and name.
+- V2 adds tabs for its features (Notes and Exams for students, Exams for teachers and admins, Usage for the Super Admin); see [roadmap-v2.md](roadmap-v2.md).
 - Users with several roles get a **role switcher** in the profile menu; users in several colleges get a **college switcher** at login and in the top bar.
 - Touch targets are at least 44 by 44 px on mobile (WCAG's own minimum is smaller; 44 is the common platform guideline).
 - Wide tables become **card lists** on mobile; filters move into a bottom sheet.
 
 ## Key screens
 
-**Chat (student).** Full-height conversation. Message input fixed at the bottom with the on-screen keyboard handled correctly. A **subject chip** above the input shows "All subjects" and can be tapped to pin one. Suggestion chips: "What was taught today?", "Explain the last topic", "What's in the next exam?". Answers arrive whole (streaming is a later improvement). Under each answer, **source chips** (date or syllabus unit) open a bottom sheet with the original entry. A small **label** marks the kind of content: _From syllabus_, _Reported in class_, _General explanation_, _Beta translation_. "Unrelated question" and "no answer found" have their own calm message styles. A quota meter appears only when close to the limit.
+**Chat (student).** Full-height conversation. Message input fixed at the bottom with the on-screen keyboard handled correctly. A **subject chip** above the input shows "All subjects" and can be tapped to pin one. Suggestion chips: "What was taught today?", "Explain the last topic we covered". Answers arrive whole (streaming is a later improvement). Under each answer, **source chips** (date or syllabus unit) open a bottom sheet with the original entry. A small **label** marks the kind of content: _From syllabus_, _Reported in class_, _General explanation_ (V2 adds more, listed in [roadmap-v2.md](roadmap-v2.md)). "Unrelated question" and "no answer found" have their own calm message styles. A quota meter appears only when close to the limit.
 
 **Catch-up (student).** A horizontal date strip (swipeable) with a range picker; below, one card per subject with the stored summary and the topics, plus "Ask a follow-up" that opens chat with that context.
 
@@ -52,8 +53,6 @@ Defined once in `styles/tokens.css` as CSS variables (same approach as the blog)
 **Syllabus review (admin).** Desktop: three columns, topic tree | source PDF page | proposed changes (diff). Mobile: the same as tabs. Low-confidence items have a warning mark. A box at the top takes plain-language change requests; proposed changes appear as before/after rows with Accept and Reject.
 
 **Student invites (admin).** Add one or paste/upload a CSV; a preview table shows errors per row; sending shows progress ("120 of 400 sent today") and per-row status with resend and fix actions.
-
-**Exam scope (later).** One text box ("Unit 1 to Unit 5, skip 2.4") above the topic tree; matched topics highlight; Confirm publishes.
 
 ## Shared components
 
