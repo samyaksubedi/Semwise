@@ -76,7 +76,7 @@ This builds the shared package, starts the API on http://localhost:4000, waits f
 pnpm --filter @semwise/api seed:demo
 ```
 
-Creates (or recreates) "Demo College": one account per role (`admin`, `program`, `teacher`, `teacher2`, `cr`, `student`, `student2` at `@demo.semwise.local`, password `semwise demo 2026`), a program with a batch, semester, sections, subjects and published syllabi, classes, a week of class entries and one entry waiting for the teacher. With `OPENAI_API_KEY` set it also indexes the content (a fraction of a cent) so chat can answer.
+Creates (or recreates) "Demo College": one account per role (`admin`, `program`, `teacher`, `teacher2`, `cr`, `student`, `student2` at `@demo.semwise.local`, password `semwise demo 2026`), a program with a batch, semester, sections, subjects and published syllabi, classes, a week of class entries and one entry waiting for the teacher. It also makes `platform@demo.semwise.local` a Super Admin (same password; it belongs to no college) and removes colleges whose slug starts with `e2e-` (left by the browser tests). It refuses to run with `NODE_ENV=production`. With `OPENAI_API_KEY` set it also indexes the content (a fraction of a cent) so chat can answer.
 
 ### Screenshots (UI check)
 

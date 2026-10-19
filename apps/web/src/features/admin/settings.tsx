@@ -2,11 +2,12 @@
 
 import type { ApprovalSettingsView, ProgramView, TenantView } from "@semwise/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Switch } from "@/components/ui/field";
 import { ErrorState, errorMessage } from "@/components/ui/states";
 import { Card, ListSkeleton, Notice, PageHeader, SectionTitle } from "@/components/ui/surface";
+import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { useToast } from "@/components/ui/toast";
 import { ApiError, api } from "@/lib/api";
 import { SESSION_KEY, useSession } from "@/lib/session";
@@ -120,12 +121,6 @@ function CollegeCard() {
   const client = useQueryClient();
   const toast = useToast();
   const college = useQuery({ queryKey: keys.college, queryFn: () => api<TenantView>("/college") });
-  // Browsers list some zones under older names (Asia/Katmandu): keep the college's own value.
-  const current = college.data?.timezone;
-  const zones = useMemo(() => {
-    const list = Intl.supportedValuesOf("timeZone");
-    return current && !list.includes(current) ? [...list, current].sort() : list;
-  }, [current]);
   const [name, setName] = useState<string | null>(null);
   const [zone, setZone] = useState<string | null>(null);
   const save = useMutation({
@@ -183,17 +178,11 @@ function CollegeCard() {
               error={fieldError("timezone")}
             >
               {(p) => (
-                <Select
+                <TimezoneSelect
                   {...p}
                   value={zone ?? college.data.timezone}
                   onChange={(e) => setZone(e.target.value)}
-                >
-                  {zones.map((z) => (
-                    <option key={z} value={z}>
-                      {z.replaceAll("_", " ")}
-                    </option>
-                  ))}
-                </Select>
+                />
               )}
             </Field>
             <div>

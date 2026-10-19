@@ -110,7 +110,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Sidebar
         items={items}
         pathname={pathname}
-        collegeName={college?.name ?? t.areas.platform}
+        collegeName={college?.name ?? t.app.name}
         areaName={area ? areaLabel(area) : ""}
         collapsed={collapsed}
         onToggle={toggleCollapsed}

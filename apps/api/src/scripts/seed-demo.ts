@@ -4,7 +4,7 @@
  *
  * Creates (or recreates) "Demo College" with one account per role, a program with a batch,
  * semester, sections and subjects, published syllabi, classes, a week of class entries and one
- * entry waiting for the teacher. With OPENAI_API_KEY set it also indexes the content (a fraction
+ * entry waiting for the teacher, plus a Super Admin (platform@...). With OPENAI_API_KEY set it also indexes the content (a fraction
  * of a cent) so chat can answer. Every account uses the password printed at the end.
  * Development only: it refuses to run with NODE_ENV=production.
  */
@@ -18,11 +18,14 @@ import { closeRedis } from "../lib/redis.js";
 import { isAiConfigured } from "../modules/ai/index.js";
 import { hashPassword } from "../modules/auth/index.js";
 import { knowledgeService } from "../modules/knowledge/index.js";
+import { membershipsService } from "../modules/memberships/index.js";
 import { sessionsService } from "../modules/sessions/index.js";
 import { chunksFor } from "../modules/syllabus/syllabus.tree.js";
 
 const PASSWORD = "semwise demo 2026";
 const SLUG = "demo-college";
+/** Slug prefix of colleges created by the browser tests (apps/web/e2e). */
+const E2E_SLUG = "e2e-";
 const TZ = "Asia/Kathmandu";
 const mail = (name: string) => `${name}@demo.semwise.local`;
 
@@ -132,6 +135,8 @@ async function main() {
     }
     await withSystem((db) => db.tenant.delete({ where: { id: old.id } }));
   }
+  // Colleges the browser tests created as the demo Super Admin (they hold no content).
+  await withSystem((db) => db.tenant.deleteMany({ where: { slug: { startsWith: E2E_SLUG } } }));
 
   const ids = await withSystem(async (db) => {
     const user = (name: string, displayName: string) =>
@@ -154,7 +159,9 @@ async function main() {
       cr: await user("cr", "Aarav Gurung"),
       student: await user("student", "Priya Maharjan"),
       student2: await user("student2", "Nabin Rai"),
+      platform: await user("platform", "Platform Operator"),
     };
+    await membershipsService.grantSuperAdmin(people.platform.id);
     const tenant = await db.tenant.create({
       data: { name: "Demo College", slug: SLUG, timezone: TZ, status: "ACTIVE" },
     });
@@ -524,6 +531,7 @@ async function main() {
     ["CR and student, section A", "cr"],
     ["Student, section A", "student"],
     ["Student, section B", "student2"],
+    ["Super Admin (no college)", "platform"],
   ]) {
     console.log(`  ${role.padEnd(28)} ${mail(who)}`);
   }

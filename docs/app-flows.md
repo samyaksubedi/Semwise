@@ -39,7 +39,7 @@ The end-to-end flow of every feature, from the user's side and from the system's
 
 **Forgot password**: request, email with single-use expiring link, set new password, all other sessions revoked. The response never reveals whether the email exists.
 
-**Super Admin** has a separate login area and can only manage tenants, not college content.
+**Super Admin** has a separate login area and can only manage tenants, not college content. The colleges page says so on screen.
 
 ## 2. Tenant provisioning and academic structure
 

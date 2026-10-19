@@ -34,7 +34,7 @@ Defined once in `styles/tokens.css` as CSS variables (same approach as the blog)
   - **CR:** Today (new entry), My entries, plus the student tabs.
   - **Teacher:** Approvals, My classes, Exams (later).
   - **Program and University Admin:** Overview, Structure, Syllabus, Students, Classes, Settings; usage under Settings.
-  - **Super Admin:** Colleges, Usage.
+  - **Super Admin:** Colleges, Usage (later). As built: sign-in lands on `/platform/colleges`, a list of colleges (name, slug, status, admin count, pending admin invites) with a note that college content is not shown; a sheet per college lists its University Admins and offers inviting another one and suspend or reactivate (each confirmed). Creating a college asks for the name, an optional slug, a timezone from a grouped IANA list with UTC offsets, and the first University Admin's email and name.
 - Users with several roles get a **role switcher** in the profile menu; users in several colleges get a **college switcher** at login and in the top bar.
 - Touch targets are at least 44 by 44 px on mobile (WCAG's own minimum is smaller; 44 is the common platform guideline).
 - Wide tables become **card lists** on mobile; filters move into a bottom sheet.
