@@ -2,7 +2,7 @@
 
 import type { ApprovalItem, EntryTopicView } from "@semwise/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCheck, X } from "lucide-react";
+import { CheckCheck, Pencil, X } from "lucide-react";
 import { useState } from "react";
 import { Button, IconButton } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
@@ -205,6 +205,7 @@ function ApprovalCard({
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="ghost" onClick={() => setEditing(true)} disabled={busy}>
+                <Pencil aria-hidden className="size-4" />
                 {t.teacher.editApprove}
               </Button>
               <div className="ml-auto flex gap-2">

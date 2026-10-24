@@ -12,16 +12,18 @@ const variants: Record<Variant, string> = {
   primary: "bg-accent text-on-accent hover:bg-accent-hover shadow-soft",
   secondary:
     "bg-surface text-text border border-border hover:border-border-strong hover:bg-surface-2",
-  ghost: "text-text hover:bg-surface-2",
+  // Accent text so a lone ghost button still reads as an action, not a label.
+  ghost: "text-accent-text hover:bg-accent-soft",
   danger: "bg-danger text-white hover:opacity-90",
   /** A destructive action that opens a confirmation (it is not the main action on the page). */
   quietDanger: "text-danger hover:bg-danger-soft",
 };
 
-// md is 44 px tall: the touch target on phones.
+// md is 44 px tall: the touch target on phones. sm looks 36 px tall but an invisible layer
+// widens its hit area to 44 px (4 px each side, so neighbours 8 px apart do not overlap).
 const sizes: Record<Size, string> = {
   md: "h-11 px-4 text-[15px]",
-  sm: "h-9 px-3 text-sm",
+  sm: "relative h-9 px-3 text-sm after:absolute after:-inset-1 after:content-['']",
 };
 
 export function buttonClass(variant: Variant = "primary", size: Size = "md", extra?: string) {

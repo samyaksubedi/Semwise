@@ -19,7 +19,7 @@ Defined once in `styles/tokens.css` as CSS variables (same approach as the blog)
 - **Colour:** neutral greys for surfaces and text, **one accent** (a calm blue or indigo) for primary actions and links. Semantic colours for status: success (published), warning (pending), danger (rejected, errors), info (AI-generated). Light and dark themes, following the system setting with a manual toggle.
 - **Type:** one clean sans-serif family (for example Inter) with a small scale: 12, 14 (body on mobile 16), 18, 20, 24, 30. Line height 1.5 for text.
 - **Spacing:** 4 px base scale (4, 8, 12, 16, 24, 32, 48). 16 px page gutters on mobile.
-- **Shape:** 8 px radius for controls, 12 px for cards and sheets; 1 px borders; very light shadows.
+- **Shape:** 8 px radius for controls, 12 px for cards and sheets; 1 px borders; very light shadows. Card and divider borders stay soft; the outlines of inputs, selects and switches use `--border-input`, which keeps 3:1 against the surface (WCAG 1.4.11).
 - **Motion:** 150 to 200 ms ease-out; respect `prefers-reduced-motion`.
 
 ## Layout and navigation
@@ -37,7 +37,7 @@ Defined once in `styles/tokens.css` as CSS variables (same approach as the blog)
   - **Super Admin:** Colleges. As built: sign-in lands on `/platform/colleges`, a list of colleges (name, slug, status, admin count, pending admin invites) with a note that college content is not shown; a sheet per college lists its University Admins and offers inviting another one and suspend or reactivate (each confirmed). Creating a college asks for the name, an optional slug, a timezone from a grouped IANA list with UTC offsets, and the first University Admin's email and name.
 - V2 adds tabs for its features (Notes and Exams for students, Exams for teachers and admins, Usage for the Super Admin); see [roadmap-v2.md](roadmap-v2.md).
 - Users with several roles get a **role switcher** in the profile menu; users in several colleges get a **college switcher** at login and in the top bar.
-- Touch targets are at least 44 by 44 px on mobile (WCAG's own minimum is smaller; 44 is the common platform guideline).
+- Touch targets are at least 44 by 44 px on mobile (WCAG's own minimum is smaller; 44 is the common platform guideline). Small buttons look 36 px tall but carry an invisible layer that widens the hit area to 44 px.
 - Wide tables become **card lists** on mobile; filters move into a bottom sheet.
 
 ## Key screens
@@ -87,7 +87,22 @@ Fixed:
 
 Checked and fine: logical order (top bar, content, bottom tabs), labelled fields and buttons, the sign-in error is an alert and focus stays in the form, tabs move with arrow keys (one Tab stop), modal sheets keep Tab inside (the browser's own controls aside), Escape closes and returns focus, approvals' Reject moves focus to the reason field, the syllabus reading and entry organizing notices are status regions, toasts are polite.
 
-Not done or known gaps: no run with a real screen reader (NVDA, VoiceOver, TalkBack); colour contrast was not measured with a tool; sheets put first focus on their close button rather than the first field; native date inputs are three Tab stops each (browser behaviour); the walkthrough covered the five flows above, not every admin screen.
+Not done or known gaps: no run with a real screen reader (NVDA, VoiceOver, TalkBack); contrast was measured for the token pairs (see the visual pass below), not pixel by pixel on every screen; sheets put first focus on their close button rather than the first field; native date inputs are three Tab stops each (browser behaviour); the walkthrough covered the five flows above, not every admin screen.
+
+### Visual pass (2026-10-24)
+
+Every screen was screenshotted at 360, 768 and 1280 px in light and dark (seeded demo data, fake AI), checked against this document and the ui-ux-pro-max skill rules (accessibility, touch, layout, type and colour). No page scrolls sideways at 360 px. The token pairs were measured for contrast.
+
+Fixed:
+
+- Page headers had twice the intended space below them (their own margin plus the page column's gap). `PageHeader` no longer has a margin; pages space it with their column gap.
+- `--text-faint` (placeholders, "optional") was 3.2 to 3.5:1 in light mode; now 4.6:1 on the page background. Light `--success` darkened slightly so success pills clear 4.5:1 with room.
+- Inputs, selects and the switch's off track were outlined at 1.3 to 1.7:1, so empty fields barely looked like fields; they now use `--border-input` (3.1:1 or more in both themes).
+- Ghost buttons read as plain text (for example "Edit and approve", "Withdraw", "Sign out everywhere"); they now use the accent text colour, and "Edit and approve" has a pencil icon.
+- Small buttons were 36 px touch targets; their hit area is now 44 px.
+- Admin Settings was centred while every other admin page is left-aligned; now left-aligned.
+
+Kept on purpose: the skill's generated design system suggested a children's font pair (Baloo 2 and Comic Neue) and avoiding dark mode, which do not suit college students and staff and conflict with this document; Inter, the single indigo accent and both themes stay.
 
 ## Performance
 

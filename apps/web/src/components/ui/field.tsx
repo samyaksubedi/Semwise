@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { t } from "@/lib/strings";
 
 const control =
-  "w-full rounded-control border border-border bg-surface px-3 text-text placeholder:text-faint transition-calm hover:border-border-strong focus:border-accent disabled:opacity-60 aria-[invalid=true]:border-danger";
+  "w-full rounded-control border border-border-input bg-surface px-3 text-text placeholder:text-faint transition-calm hover:border-muted focus:border-accent disabled:opacity-60 aria-[invalid=true]:border-danger";
 
 /** A labelled form field: label above, hint and error below (errors are announced). */
 export function Field({
@@ -109,7 +109,7 @@ export function Switch({
         onClick={() => onChange(!checked)}
         className={cn(
           "relative h-7 w-12 shrink-0 rounded-full transition-calm disabled:opacity-50",
-          checked ? "bg-accent" : "bg-border-strong",
+          checked ? "bg-accent" : "bg-border-input",
         )}
       >
         <span

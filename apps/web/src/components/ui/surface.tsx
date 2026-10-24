@@ -20,7 +20,10 @@ export function Card({ className, ...props }: ComponentProps<"div">) {
   );
 }
 
-/** A page heading with an optional lead line and actions (actions wrap below on phones). */
+/**
+ * A page heading with an optional lead line and actions (actions wrap below on phones). It has
+ * no bottom margin: pages put it in a `flex flex-col gap-*` column that spaces it.
+ */
 export function PageHeader({
   title,
   lead,
@@ -33,7 +36,7 @@ export function PageHeader({
   back?: ReactNode;
 }) {
   return (
-    <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
         {back}
         <h1 className="text-2xl font-semibold tracking-tight text-balance">{title}</h1>

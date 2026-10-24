@@ -21,7 +21,7 @@ export function SettingsPage() {
   const programs = usePrograms();
   const isUa = session?.roles.some((r) => r.role === "UNIVERSITY_ADMIN") ?? false;
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+    <div className="flex max-w-2xl flex-col gap-6">
       <PageHeader title={t.settings.title} lead={t.settings.lead} />
       <section>
         <SectionTitle>{t.settings.approvals}</SectionTitle>

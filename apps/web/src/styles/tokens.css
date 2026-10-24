@@ -9,9 +9,11 @@
   --surface-2: #f1f2f4;
   --border: #e3e5e9;
   --border-strong: #cdd1d8;
+  /* Outlines of inputs and switches: 3:1 against the surface (WCAG 1.4.11). */
+  --border-input: #878d98;
   --text: #16181d;
   --text-muted: #5b616e;
-  --text-faint: #848a96;
+  --text-faint: #6b7180;
 
   --accent: #4f46e5;
   --accent-hover: #4338ca;
@@ -19,7 +21,7 @@
   --accent-text: #3730a3;
   --on-accent: #ffffff;
 
-  --success: #15803d;
+  --success: #137a3a;
   --success-soft: #e8f6ee;
   --warning: #a15c07;
   --warning-soft: #fdf3e2;
@@ -45,6 +47,7 @@
   --surface-2: #1f232b;
   --border: #2a2f39;
   --border-strong: #3a404c;
+  --border-input: #6a7180;
   --text: #eceef2;
   --text-muted: #a5abb7;
   --text-faint: #7d8492;
@@ -77,6 +80,7 @@
     --surface-2: #1f232b;
     --border: #2a2f39;
     --border-strong: #3a404c;
+    --border-input: #6a7180;
     --text: #eceef2;
     --text-muted: #a5abb7;
     --text-faint: #7d8492;

@@ -87,7 +87,7 @@ export function ProgramsPage() {
   const isUa = session?.roles.some((r) => r.role === "UNIVERSITY_ADMIN") ?? false;
   const [open, setOpen] = useState(false);
   return (
-    <div>
+    <div className="flex flex-col gap-5">
       <PageHeader
         title={t.structure.title}
         lead={t.structure.lead}
